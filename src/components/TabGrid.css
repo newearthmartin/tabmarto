@@ -1,0 +1,154 @@
+.tab-grid-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  outline: none;
+  padding: 4px 0;
+}
+
+.tab-grid {
+  display: flex;
+  align-items: flex-start;
+  min-width: max-content;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* String labels */
+.tab-labels {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 1.2ch;
+  height: 1.2em;
+  color: var(--string-color);
+  font-weight: bold;
+  font-size: 15px;
+  user-select: none;
+}
+
+/* Bars */
+.tab-bar {
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+.tab-bar--open {
+  width: 1px;
+  background: var(--text-muted);
+  margin: 0 0.8ch;
+}
+
+.tab-bar--close {
+  width: 1px;
+  background: var(--text-muted);
+  margin: 0 0.8ch;
+}
+
+.tab-bar--measure {
+  width: 2px;
+  background: var(--text-muted);
+  margin: 0 0.7ch;
+}
+
+/* Columns */
+.tab-columns {
+  display: flex;
+  align-items: flex-start;
+}
+
+.tab-column-group {
+  display: flex;
+  align-items: flex-start;
+}
+
+.tab-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cells */
+.tab-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.2em;
+  width: 1.6ch;
+  cursor: pointer;
+  position: relative;
+}
+
+.tab-cell:hover:not(.tab-cell--selected) {
+  background: var(--cell-active);
+}
+
+.tab-cell--selected {
+  background: var(--accent);
+  z-index: 1;
+}
+
+.tab-cell--selected .tab-cell-dash {
+  color: #fff;
+}
+
+.tab-column-group--playing .tab-cell {
+  background: rgba(200, 146, 42, 0.12);
+}
+
+.tab-column-group--selected .tab-cell {
+  background: rgba(233, 69, 96, 0.15);
+}
+
+.tab-column-group--selected .tab-cell--selected {
+  background: var(--accent);
+}
+
+.tab-cell-dash {
+  color: var(--text-muted);
+  font-size: 15px;
+  font-family: var(--font-mono);
+  pointer-events: none;
+  user-select: none;
+  width: 1ch;
+  text-align: center;
+  display: block;
+}
+
+.tab-cell--note .tab-cell-dash {
+  color: var(--text);
+  font-weight: bold;
+}
+
+.tab-cell--note .tab-cell-dash--ghost {
+  font-weight: bold;
+}
+
+.tab-cell-dash--wide {
+  font-size: 10px;
+  width: 100%;
+  letter-spacing: -0.5px;
+}
+
+.tab-cell-dash--ghost {
+  position: relative;
+  font-size: 12px;
+}
+
+.tab-cell-dash--ghost::before {
+  content: '(';
+  position: absolute;
+  left: -0.7ch;
+  font-size: 11px;
+}
+
+.tab-cell-dash--ghost::after {
+  content: ')';
+  position: absolute;
+  right: -0.7ch;
+  font-size: 11px;
+}
