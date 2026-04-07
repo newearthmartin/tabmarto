@@ -154,6 +154,56 @@ describe('tab lifecycle — Drive save', () => {
     vi.useRealTimers()
   })
 
+  it('renaming an already-saved Drive tab saves once and clears the dirty state', async () => {
+    vi.useFakeTimers()
+
+    let currentName = 'Source Tab.json'
+    const listDriveTabs = vi.fn().mockImplementation(async () => [{
+      id: FAKE_DRIVE_ID,
+      name: currentName,
+      modifiedTime: '2024-01-01T00:00:00Z',
+      appProperties: { appId: 'src' },
+    }])
+    const loadFromDrive = vi.fn().mockResolvedValue(exportTab(makeTab({ id: 'src', title: 'Source Tab' })))
+    const saveToDrive = vi.fn().mockImplementation(async (tab) => {
+      currentName = `${tab.title}.json`
+      return FAKE_DRIVE_ID
+    })
+
+    const { result } = renderHook(() => useTabEditor())
+
+    await act(async () => {
+      await result.current.switchToDrive({
+        listDriveTabs,
+        loadFromDrive,
+        saveToDrive,
+        deleteFromDrive: vi.fn(),
+      })
+    })
+
+    expect(result.current.tab.title).toBe('Source Tab')
+    expect(result.current.tab.driveId).toBe(FAKE_DRIVE_ID)
+
+    act(() => result.current.updateTitle('Renamed Tab'))
+    await act(async () => {
+      vi.advanceTimersByTime(600)
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000)
+      await Promise.resolve()
+    })
+
+    expect(saveToDrive).toHaveBeenCalledTimes(1)
+    expect(result.current.tab.title).toBe('Renamed Tab')
+    expect(result.current.tab.driveId).toBe(FAKE_DRIVE_ID)
+    expect(result.current.tab.updatedAt).toBeUndefined()
+    expect(result.current.savedTabs[0].title).toBe('Renamed Tab')
+
+    vi.useRealTimers()
+  })
+
   it('Drive tabs (with driveId) are NOT saved to localStorage when flushed', () => {
     const { result } = renderHook(() => useTabEditor())
 

@@ -214,6 +214,21 @@ describe('saveToDrive', () => {
     expect(opts.method).toBe('PATCH')
   })
 
+  it('does not include parents in PATCH metadata for an existing file', async () => {
+    seedValidToken()
+    const { saveToDrive } = await loadModule()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'existing-id' }),
+    }))
+
+    await saveToDrive({ id: 'tab-123', title: 'Renamed', driveId: 'existing-id', sections: [] }, exportFn)
+
+    const body = vi.mocked(fetch).mock.calls[0][1].body
+    expect(body).toContain('"name":"Renamed.json"')
+    expect(body).not.toContain('"parents":["appDataFolder"]')
+  })
+
   it('sends the tab title as the file name in the multipart metadata', async () => {
     seedValidToken()
     const { saveToDrive } = await loadModule()

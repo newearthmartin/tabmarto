@@ -114,29 +114,31 @@ export async function listDriveTabs() {
 export async function saveToDrive(tab, exportFn) {
   const content = exportFn(tab)
   const name = `${tab.title || 'Untitled'}.json`
+  const existingId = tab.driveId
   const meta = {
     name,
     mimeType: MIME,
-    parents: ['appDataFolder'],
     appProperties: {
       ...APP_PROP,
       appId: tab.id,
     },
   }
-
-  // Check if a file with this tab's Drive ID already exists
-  const existingId = tab.driveId
-  const body = buildMultipart(meta, content)
+  const createMeta = {
+    ...meta,
+    parents: ['appDataFolder'],
+  }
 
   let res
   if (existingId) {
+    const body = buildMultipart(meta, content)
     console.log('[Drive] saveToDrive() - updating existing file:', existingId)
-    res = await api(`${UPLOAD_API}/files/${existingId}?uploadType=multipart`, {
+    res = await api(`${UPLOAD_API}/files/${existingId}?uploadType=multipart&fields=id`, {
       method: 'PATCH',
       headers: { 'Content-Type': body.contentType },
       body: body.data,
     })
   } else {
+    const body = buildMultipart(createMeta, content)
     console.log('[Drive] saveToDrive() - creating new file:', name)
     res = await api(`${UPLOAD_API}/files?uploadType=multipart&fields=id`, {
       method: 'POST',
