@@ -423,7 +423,7 @@ export function useTabEditor() {
     })))
   }, [setTab])
 
-  const pasteColumns = useCallback((sectionIdx, cols, atCol) => {
+  const pasteColumns = useCallback((sectionIdx, cols, atCol, bars = []) => {
     if (!cols?.length) return
 
     pushHistory()
@@ -434,7 +434,11 @@ export function useTabEditor() {
       cols.forEach((column, index) => {
         columns[atCol + index] = [...column]
       })
-      return { ...section, columns }
+      // Remove existing bars in the paste range, then add pasted bars
+      const existingBars = section.bars.filter(b => b < atCol || b >= atCol + cols.length)
+      const pastedBars = bars.map(b => b + atCol)
+      const mergedBars = [...existingBars, ...pastedBars].sort((a, b) => a - b)
+      return { ...section, columns, bars: mergedBars }
     }))
   }, [numStrings, setTab])
 

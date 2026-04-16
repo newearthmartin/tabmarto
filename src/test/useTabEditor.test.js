@@ -298,6 +298,25 @@ describe('pasteColumns', () => {
     act(() => result.current.pasteColumns(0, cols, len - 2))
     expect(result.current.tab.sections[0].columns.length).toBeGreaterThan(len)
   })
+
+  it('pastes bar lines at the destination offset', () => {
+    const { result } = getHook()
+    const cols = [Array(6).fill(null), Array(6).fill(null), Array(6).fill(null)]
+    act(() => result.current.pasteColumns(0, cols, 2, [0, 2]))
+    expect(result.current.tab.sections[0].bars).toContain(2)
+    expect(result.current.tab.sections[0].bars).toContain(4)
+  })
+
+  it('replaces existing bars in paste range with pasted bars', () => {
+    const { result } = getHook()
+    act(() => result.current.toggleBar(0, 3))
+    expect(result.current.tab.sections[0].bars).toContain(3)
+    const cols = [Array(6).fill(null), Array(6).fill(null)]
+    act(() => result.current.pasteColumns(0, cols, 3, [1]))
+    // Bar at 3 (in paste range) should be replaced; pasted bar at offset 1 → col 4
+    expect(result.current.tab.sections[0].bars).not.toContain(3)
+    expect(result.current.tab.sections[0].bars).toContain(4)
+  })
 })
 
 // ── Section management ────────────────────────────────────────────────────────

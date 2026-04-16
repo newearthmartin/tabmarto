@@ -183,7 +183,11 @@ export default function App() {
     const si = range ? range.section : cursor.section
     const lo = range ? range.lo : cursor.col
     const hi = range ? range.hi : cursor.col
-    clipboardRef.current = tab?.sections?.[si]?.columns?.slice(lo, hi + 1) || []
+    const section = tab?.sections?.[si]
+    clipboardRef.current = {
+      columns: section?.columns?.slice(lo, hi + 1) || [],
+      bars: (section?.bars || []).filter(b => b >= lo && b <= hi).map(b => b - lo),
+    }
     for (let ci = hi; ci >= lo; ci--) deleteColumn(si, ci)
     setSelection(null)
     setCursor(prev => ({ ...prev, section: si, col: Math.max(0, lo) }))
@@ -211,15 +215,19 @@ export default function App() {
           const si = range ? range.section : cursor.section
           const lo = range ? range.lo : cursor.col
           const hi = range ? range.hi : cursor.col
-          clipboardRef.current = tab.sections[si]?.columns.slice(lo, hi + 1)
+          const sec = tab.sections[si]
+          clipboardRef.current = {
+            columns: sec?.columns.slice(lo, hi + 1),
+            bars: (sec?.bars || []).filter(b => b >= lo && b <= hi).map(b => b - lo),
+          }
           break
         }
         case 'x': e.preventDefault(); cutColumns(); break
         case 'v': {
           e.preventDefault()
           if (clipboardRef.current) {
-            pasteColumns(cursor.section, clipboardRef.current, cursor.col)
-            setSelection({ section: cursor.section, start: cursor.col, end: cursor.col + clipboardRef.current.length - 1 })
+            pasteColumns(cursor.section, clipboardRef.current.columns, cursor.col, clipboardRef.current.bars)
+            setSelection({ section: cursor.section, start: cursor.col, end: cursor.col + clipboardRef.current.columns.length - 1 })
           }
           break
         }
