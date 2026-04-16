@@ -77,10 +77,32 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         y += 8
       }
 
+      const lineW = pageW - 2 * mx - labelW - 1
+
       let start = 0
       while (start < columns.length) {
-        const end = Math.min(start + colsPerLine, columns.length)
+        // Determine how many columns fit on this line, accounting for bar spacing
+        let end = start
+        let usedW = 0
+        while (end < columns.length && usedW + cellW <= lineW) {
+          usedW += cellW
+          if (barsSet.has(end)) usedW += cellW // bar takes a full cell width
+          end++
+        }
+        if (end === start) end = start + 1 // always advance at least one column
+
         const chunk = columns.slice(start, end)
+
+        // Precompute x offset for each column in the chunk (accounting for bars before it)
+        const colX = []
+        let xOff = 0
+        for (let i = 0; i < chunk.length; i++) {
+          colX[i] = xOff
+          xOff += cellW
+          if (barsSet.has(start + i)) xOff += cellW
+        }
+        const totalW = xOff
+
         ensureSpace(blockH + 3)
 
         tab.tuning.forEach((note, si) => {
@@ -102,7 +124,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
           // Cells
           chunk.forEach((col, i) => {
             const fret = col[si]
-            const cx = barX + 0.5 + i * cellW
+            const cx = barX + 0.5 + colX[i]
             const isGhost = ghostsSet.has(`${start + i},${si}`)
 
             if (fret !== null) {
@@ -124,15 +146,15 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
 
             // Measure bar after column
             if (barsSet.has(start + i)) {
-              const bx = barX + 0.5 + (i + 1) * cellW
-              doc.setDrawColor(80, 80, 80)
-              doc.setLineWidth(0.35)
+              const bx = barX + 0.5 + colX[i] + cellW + cellW / 2
+              doc.setDrawColor(140, 140, 140)
+              doc.setLineWidth(0.25)
               doc.line(bx, rowTop, bx, rowTop + rowH)
             }
           })
 
           // Closing bar
-          const closeX = barX + 0.5 + chunk.length * cellW
+          const closeX = barX + 0.5 + totalW
           doc.setDrawColor(140, 140, 140)
           doc.setLineWidth(0.25)
           doc.line(closeX, rowTop, closeX, rowTop + rowH)
