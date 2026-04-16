@@ -13,6 +13,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     a.download = `${title || 'tab'}.json`
     a.click()
     URL.revokeObjectURL(url)
+    onClose()
   }
 
   function handleCopy() {
@@ -28,6 +29,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     a.download = `${title || 'tab'}.txt`
     a.click()
     URL.revokeObjectURL(url)
+    onClose()
   }
 
   async function handleDownloadPdf() {
@@ -149,6 +151,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     }
 
     doc.save(`${title || 'tab'}.pdf`)
+    onClose()
   }
 
   return (
