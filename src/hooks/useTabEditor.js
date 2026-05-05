@@ -270,7 +270,20 @@ export function useTabEditor() {
     const history = historyRef.current
     if (!history.length) return
     historyRef.current = history.slice(0, -1)
-    setTab(history[history.length - 1])
+    const restored = history[history.length - 1]
+    setTab(restored)
+    setCursor(prev => {
+      const sections = restored?.sections
+      if (!sections?.length) return prev
+      const si = Math.max(0, Math.min(prev.section, sections.length - 1))
+      const colLen = sections[si]?.columns.length ?? 1
+      const strLen = restored.tuning?.length ?? prev.string + 1
+      return {
+        section: si,
+        col: Math.max(0, Math.min(prev.col, colLen - 1)),
+        string: Math.max(0, Math.min(prev.string, strLen - 1)),
+      }
+    })
   }, [setTab])
 
   const moveCursor = useCallback((dCol, dStr) => {
@@ -372,6 +385,7 @@ export function useTabEditor() {
       columns: [...section.columns.slice(0, col + 1), Array(numStrings).fill(null), ...section.columns.slice(col + 1)],
       bars: shiftBarsInsert(section.bars, col),
     })))
+    setCursor(prev => prev.section === sectionIdx ? { ...prev, col: col + 1 } : prev)
   }, [numStrings, setTab])
 
   const deleteColumn = useCallback((sectionIdx, col) => {

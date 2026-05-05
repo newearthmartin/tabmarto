@@ -184,13 +184,15 @@ export default function App() {
     const lo = range ? range.lo : cursor.col
     const hi = range ? range.hi : cursor.col
     const section = tab?.sections?.[si]
+    if (!section) return
     clipboardRef.current = {
-      columns: section?.columns?.slice(lo, hi + 1) || [],
-      bars: (section?.bars || []).filter(b => b >= lo && b <= hi).map(b => b - lo),
+      columns: section.columns.slice(lo, hi + 1),
+      bars: (section.bars || []).filter(b => b >= lo && b <= hi).map(b => b - lo),
     }
     for (let ci = hi; ci >= lo; ci--) deleteColumn(si, ci)
+    const newLen = Math.max(1, section.columns.length - (hi - lo + 1))
     setSelection(null)
-    setCursor(prev => ({ ...prev, section: si, col: Math.max(0, lo) }))
+    setCursor(prev => ({ ...prev, section: si, col: Math.max(0, Math.min(lo, newLen - 1)) }))
   }, [getSelectionRange, cursor, tab?.sections, deleteColumn, setCursor])
 
   // ── Keyboard handler ──────────────────────────────────────────────────────
@@ -260,7 +262,6 @@ export default function App() {
         e.preventDefault()
         clearSelection()
         insertColumnAfter(cursor.section, cursor.col)
-        moveCursor(1, 0)
         break
 
       case '-':
@@ -371,7 +372,7 @@ export default function App() {
         onNew={() => { newTab('Untitled Tab'); openSidebar() }}
         onExportAscii={() => setShowExport(true)}
         onImportAscii={() => setShowImport(true)}
-        onInsertCol={() => { insertColumnAfter(cursor.section, cursor.col); moveCursor(1, 0) }}
+        onInsertCol={() => insertColumnAfter(cursor.section, cursor.col)}
         onDeleteCol={() => deleteColumn(cursor.section, cursor.col)}
         onInsertMeasure={insertMeasureBreak}
         onToggleBar={() => toggleBar(cursor.section, cursor.col)}
