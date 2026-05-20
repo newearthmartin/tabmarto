@@ -8,7 +8,7 @@ const MIME       = 'application/json'
 const APP_PROP = { tabmarto: 'true' }
 const SCOPE      = 'https://www.googleapis.com/auth/drive.appdata'
 
-const CONNECTED_KEY  = 'tabmarto_drive_connected'
+const CONNECTED_KEY = 'tabmarto_drive_connected'
 const TOKEN_KEY      = 'tabmarto_drive_token'
 const TOKEN_EXP_KEY  = 'tabmarto_drive_expiry'
 const EMAIL_KEY      = 'tabmarto_drive_email'
@@ -73,7 +73,27 @@ async function api(path, opts = {}) {
 }
 
 export function isConnected() {
-  return !!accessToken && Date.now() < tokenExpiry - 60_000 && !!localStorage.getItem(CONNECTED_KEY)
+  return wasConnected() && !!accessToken && Date.now() < tokenExpiry - 60_000
+}
+
+export function wasConnected() {
+  return !!localStorage.getItem(CONNECTED_KEY)
+}
+
+export function clearConnected() {
+  accessToken = null
+  tokenExpiry = 0
+  tokenClient = null
+  userEmail = null
+  sessionStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(TOKEN_EXP_KEY)
+  sessionStorage.removeItem(EMAIL_KEY)
+  localStorage.removeItem(CONNECTED_KEY)
+}
+
+export function disconnect() {
+  if (accessToken) window.google?.accounts.oauth2.revoke(accessToken)
+  clearConnected()
 }
 
 export function getEmail() { return userEmail }
@@ -88,18 +108,6 @@ export async function fetchEmail() {
   } catch {
     return null
   }
-}
-
-export function disconnect() {
-  if (accessToken) window.google?.accounts.oauth2.revoke(accessToken)
-  accessToken = null
-  tokenExpiry = 0
-  tokenClient = null
-  userEmail = null
-  sessionStorage.removeItem(TOKEN_KEY)
-  sessionStorage.removeItem(TOKEN_EXP_KEY)
-  sessionStorage.removeItem(EMAIL_KEY)
-  localStorage.removeItem(CONNECTED_KEY)
 }
 
 export async function listDriveTabs() {

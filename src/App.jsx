@@ -3,7 +3,7 @@ import { useTabEditor } from './hooks/useTabEditor.js'
 import { playTab, playNote, resumeAudio } from './audio/player.js'
 import { toAscii } from './utils/ascii.js'
 import { charToFret } from './utils/fret.js'
-import { isConnected, disconnect, listDriveTabs, saveToDrive, loadFromDrive, deleteFromDrive, fetchEmail } from './utils/googleDrive.js'
+import { isConnected, wasConnected, clearConnected, disconnect, listDriveTabs, saveToDrive, loadFromDrive, deleteFromDrive, fetchEmail } from './utils/googleDrive.js'
 import { STANDARD_TUNING } from './hooks/useTabEditor.js'
 import Toolbar from './components/Toolbar.jsx'
 import SectionView from './components/SectionView.jsx'
@@ -40,6 +40,29 @@ export default function App() {
   useEffect(() => {
     if (hasInitializedDrive.current) return
     if (!isConnected()) {
+      // If the user previously connected to Drive but the session token has
+      // expired, try to re-acquire one automatically (this opens the Google
+      // consent popup). Falls back to local on failure/cancel.
+      if (wasConnected()) {
+        hasInitializedDrive.current = true
+        switchToDrive({ listDriveTabs, loadFromDrive, saveToDrive, deleteFromDrive })
+          .then(() => fetchEmail())
+          .then(email => {
+            setDriveEmail(email)
+            setDriveConnected(true)
+            setStorageMode('drive')
+            setDriveInitError(false)
+          })
+          .catch(() => {
+            clearConnected()
+            return switchToLocal().finally(() => {
+              setStorageMode('local')
+              setDriveInitError(false)
+            })
+          })
+          .finally(() => setDriveInitializing(false))
+        return
+      }
       switchToLocal().then(() => {
         setStorageMode('local')
         setDriveInitError(false)
