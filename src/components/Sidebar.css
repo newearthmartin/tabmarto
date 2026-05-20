@@ -223,6 +223,22 @@
   color: var(--accent);
 }
 
+.spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--border);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+  vertical-align: -1px;
+  margin-right: 5px;
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+
 .drive-list { margin-top: 6px; }
 
 /* Section index */

@@ -157,8 +157,8 @@ export default function Sidebar({
         <div className="sidebar-heading-row">
           <h3 className="sidebar-heading">Your Tabs</h3>
           <div className="drive-status-inline">
-            {driveSaving && <span className="drive-status drive-status--saving">Saving…</span>}
-            {!tabsLoaded && <span className="drive-status drive-status--saving">Loading…</span>}
+            {driveSaving && <span className="drive-status drive-status--saving"><span className="spinner" />Saving…</span>}
+            {!tabsLoaded && <span className="drive-status drive-status--saving"><span className="spinner" />Loading…</span>}
             {driveStatus && <span className="drive-status">{driveStatus}</span>}
           </div>
           {driveConnected && driveEmail && <span className="drive-email">{driveEmail}</span>}
@@ -306,7 +306,7 @@ export default function Sidebar({
         ) : (
           <>
             <ul className="tabs-list">
-              <li className="sidebar-empty">Loading...</li>
+              <li className="sidebar-empty"><span className="spinner" />Loading...</li>
             </ul>
           </>
         )}
