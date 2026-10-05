@@ -146,7 +146,8 @@ Functions: `fretToChar(fret)` and `charToFret(char)` in `utils/fret.js`.
 - Uses Google Identity Services (GSI) OAuth 2.0 token flow — no gapi.
 - Files stored in Drive's `appDataFolder` with `appProperties: { tabmarto: 'true' }`.
 - Tabs with a `driveId` are never saved locally — Drive is source of truth.
-- Token cached in sessionStorage with expiry tracking; auto-refreshes with 60 s buffer.
+- Token (and email) cached in localStorage with expiry tracking (Google caps access tokens at 1 h; no refresh token in the GIS token flow).
+- When expired (60 s buffer), `ensureToken` first tries a silent renewal (`prompt: 'none'` + `login_hint`, 10 s timeout); only if that fails does it fall back to the interactive popup. Works while the user is still signed in to Google and has already consented.
 - Toolbar button toggles between local and Drive modes.
 - Sections from another Drive tab can be appended into the current tab.
 

@@ -16,6 +16,7 @@ import {
 
 afterEach(() => {
   sessionStorage.clear()
+  localStorage.clear()
   vi.restoreAllMocks()
 })
 

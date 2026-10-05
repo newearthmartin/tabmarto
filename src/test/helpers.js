@@ -36,19 +36,19 @@ export const TOKEN_EXP_KEY = 'tabmarto_drive_expiry'
 export const CONNECTED_KEY = 'tabmarto_drive_connected'
 
 /**
- * Pre-seed sessionStorage with a valid token so that `ensureToken` inside
+ * Pre-seed localStorage with a valid token so that `ensureToken` inside
  * googleDrive.js short-circuits and never tries to open an OAuth popup.
  * Must be called BEFORE loadDriveModule() so the module picks it up at init.
  */
 export function seedValidToken() {
-  sessionStorage.setItem(TOKEN_KEY, FAKE_TOKEN)
-  sessionStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + 3_600_000))
+  localStorage.setItem(TOKEN_KEY, FAKE_TOKEN)
+  localStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + 3_600_000))
   localStorage.setItem(CONNECTED_KEY, '1')
 }
 
 /**
  * Reset the module registry and re-import googleDrive.js so the module-level
- * `accessToken` variable is re-initialised from the current sessionStorage.
+ * `accessToken` variable is re-initialised from the current localStorage.
  */
 export async function loadDriveModule() {
   vi.resetModules()

@@ -8,7 +8,7 @@ import {
 const EMAIL_KEY = 'tabmarto_drive_email'
 
 afterEach(() => {
-  sessionStorage.clear()
+  localStorage.clear()
   vi.restoreAllMocks()
 })
 
@@ -22,16 +22,16 @@ describe('isConnected', () => {
   })
 
   it('returns false when CONNECTED_KEY is missing', async () => {
-    sessionStorage.setItem(TOKEN_KEY, FAKE_TOKEN)
-    sessionStorage.setItem(TOKEN_EXP_KEY, FAKE_EXPIRY)
+    localStorage.setItem(TOKEN_KEY, FAKE_TOKEN)
+    localStorage.setItem(TOKEN_EXP_KEY, FAKE_EXPIRY)
     // No localStorage CONNECTED_KEY
     const { isConnected } = await loadModule()
     expect(isConnected()).toBe(false)
   })
 
   it('returns false when token is expired', async () => {
-    sessionStorage.setItem(TOKEN_KEY, FAKE_TOKEN)
-    sessionStorage.setItem(TOKEN_EXP_KEY, String(Date.now() - 1000)) // in the past
+    localStorage.setItem(TOKEN_KEY, FAKE_TOKEN)
+    localStorage.setItem(TOKEN_EXP_KEY, String(Date.now() - 1000)) // in the past
     localStorage.setItem(CONNECTED_KEY, '1')
     const { isConnected } = await loadModule()
     expect(isConnected()).toBe(false)
@@ -47,15 +47,15 @@ describe('isConnected', () => {
 // ── getEmail ──────────────────────────────────────────────────────────────────
 
 describe('getEmail', () => {
-  it('returns null when no email in sessionStorage', async () => {
+  it('returns null when no email in localStorage', async () => {
     seedValidToken()
     const { getEmail } = await loadModule()
     expect(getEmail()).toBeNull()
   })
 
-  it('returns the email stored in sessionStorage', async () => {
+  it('returns the email stored in localStorage', async () => {
     seedValidToken()
-    sessionStorage.setItem(EMAIL_KEY, 'user@example.com')
+    localStorage.setItem(EMAIL_KEY, 'user@example.com')
     const { getEmail } = await loadModule()
     expect(getEmail()).toBe('user@example.com')
   })
@@ -74,15 +74,15 @@ describe('disconnect', () => {
     delete window.google
   })
 
-  it('clears sessionStorage and localStorage keys', async () => {
+  it('clears localStorage and localStorage keys', async () => {
     seedValidToken()
-    sessionStorage.setItem(EMAIL_KEY, 'user@example.com')
+    localStorage.setItem(EMAIL_KEY, 'user@example.com')
     const { disconnect } = await loadModule()
     window.google = { accounts: { oauth2: { revoke: vi.fn() } } }
     disconnect()
-    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull()
-    expect(sessionStorage.getItem(TOKEN_EXP_KEY)).toBeNull()
-    expect(sessionStorage.getItem(EMAIL_KEY)).toBeNull()
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(localStorage.getItem(TOKEN_EXP_KEY)).toBeNull()
+    expect(localStorage.getItem(EMAIL_KEY)).toBeNull()
     expect(localStorage.getItem(CONNECTED_KEY)).toBeNull()
     delete window.google
   })

@@ -13,10 +13,9 @@ const TOKEN_KEY      = 'tabmarto_drive_token'
 const TOKEN_EXP_KEY  = 'tabmarto_drive_expiry'
 const EMAIL_KEY      = 'tabmarto_drive_email'
 
-let tokenClient = null
-let accessToken = sessionStorage.getItem(TOKEN_KEY) || null
-let tokenExpiry = parseInt(sessionStorage.getItem(TOKEN_EXP_KEY) || '0', 10)
-let userEmail   = sessionStorage.getItem(EMAIL_KEY) || null
+let accessToken = localStorage.getItem(TOKEN_KEY) || null
+let tokenExpiry = parseInt(localStorage.getItem(TOKEN_EXP_KEY) || '0', 10)
+let userEmail   = localStorage.getItem(EMAIL_KEY) || null
 
 function getClientId() {
   return import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -33,31 +32,44 @@ function loadGsiScript() {
   })
 }
 
-function initTokenClient(callback) {
-  return window.google.accounts.oauth2.initTokenClient({
-    client_id: getClientId(),
-    scope: SCOPE,
-    callback,
+const SILENT_TIMEOUT_MS = 10_000
+
+// Request a token from Google. `prompt: 'none'` renews silently (no UI) when the
+// user is still signed in to Google and has already granted consent.
+function requestToken({ prompt, timeoutMs }) {
+  return new Promise((resolve, reject) => {
+    let timer = null
+    const done = (fn, v) => { clearTimeout(timer); fn(v) }
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: getClientId(),
+      scope: SCOPE,
+      prompt,
+      ...(userEmail ? { login_hint: userEmail } : {}),
+      callback: (resp) => {
+        if (resp.error) { done(reject, new Error(resp.error)); return }
+        accessToken = resp.access_token
+        tokenExpiry = Date.now() + resp.expires_in * 1000
+        localStorage.setItem(TOKEN_KEY, accessToken)
+        localStorage.setItem(TOKEN_EXP_KEY, String(tokenExpiry))
+        localStorage.setItem(CONNECTED_KEY, '1')
+        done(resolve, accessToken)
+      },
+      error_callback: (err) => done(reject, new Error(err?.type || 'token_error')),
+    })
+    if (timeoutMs) timer = setTimeout(() => reject(new Error('silent_timeout')), timeoutMs)
+    client.requestAccessToken()
   })
 }
 
 async function ensureToken() {
   if (accessToken && Date.now() < tokenExpiry - 60_000) return accessToken
   await loadGsiScript()
-  return new Promise((resolve, reject) => {
-    if (!tokenClient) {
-      tokenClient = initTokenClient((resp) => {
-        if (resp.error) { reject(new Error(resp.error)); return }
-        accessToken = resp.access_token
-        tokenExpiry = Date.now() + resp.expires_in * 1000
-        sessionStorage.setItem(TOKEN_KEY, accessToken)
-        sessionStorage.setItem(TOKEN_EXP_KEY, String(tokenExpiry))
-        localStorage.setItem(CONNECTED_KEY, '1')
-        resolve(accessToken)
-      })
-    }
-    tokenClient.requestAccessToken()
-  })
+  if (wasConnected()) {
+    try {
+      return await requestToken({ prompt: 'none', timeoutMs: SILENT_TIMEOUT_MS })
+    } catch { /* fall through to interactive */ }
+  }
+  return requestToken({ prompt: '' })
 }
 
 
@@ -83,11 +95,10 @@ export function wasConnected() {
 export function clearConnected() {
   accessToken = null
   tokenExpiry = 0
-  tokenClient = null
   userEmail = null
-  sessionStorage.removeItem(TOKEN_KEY)
-  sessionStorage.removeItem(TOKEN_EXP_KEY)
-  sessionStorage.removeItem(EMAIL_KEY)
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(TOKEN_EXP_KEY)
+  localStorage.removeItem(EMAIL_KEY)
   localStorage.removeItem(CONNECTED_KEY)
 }
 
@@ -103,7 +114,7 @@ export async function fetchEmail() {
     const res = await api('https://www.googleapis.com/oauth2/v3/userinfo')
     const info = await res.json()
     userEmail = info.email || null
-    if (userEmail) sessionStorage.setItem(EMAIL_KEY, userEmail)
+    if (userEmail) localStorage.setItem(EMAIL_KEY, userEmail)
     return userEmail
   } catch {
     return null
