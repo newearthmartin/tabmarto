@@ -8,7 +8,7 @@ A browser-based guitar tablature editor built with React + Vite. Saves to localS
 
 ## Stack
 
-- **React 18** + **Vite 5** (no TypeScript)
+- **React 18** + **Vite 8** (no TypeScript)
 - No UI framework — plain CSS with CSS custom properties
 - Web Audio API for sound (Karplus-Strong plucked string synthesis)
 - LocalStorage or Google Drive for persistence
