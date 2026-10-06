@@ -30,7 +30,7 @@ const SectionView = forwardRef(function SectionView({
     ? { start: selection.start, end: selection.end }
     : null
 
-  const sectionTab = { ...tab, columns: section.columns, bars: section.bars, ghosts: section.ghosts ?? [] }
+  const sectionTab = { ...tab, columns: section.columns, bars: section.bars, repeats: section.repeats ?? {}, ghosts: section.ghosts ?? [] }
 
   return (
     <div className="section-view" data-section-index={sectionIndex}>

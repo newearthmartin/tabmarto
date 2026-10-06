@@ -1,5 +1,10 @@
 import { useEffect, useRef, useCallback, forwardRef } from 'react'
+import { hasRepeatStart, hasRepeatEnd, closingBar } from '../utils/repeats.js'
 import './TabGrid.css'
+
+function barClass(base, type) {
+  return [base, hasRepeatStart(type) ? 'tab-bar--rep-start' : '', hasRepeatEnd(type) ? 'tab-bar--rep-end' : ''].join(' ')
+}
 
 function fretDisplay(fret, isGhost) {
   if (fret === null) return { text: '-', wide: false, ghost: false }
@@ -17,9 +22,10 @@ const TabGrid = forwardRef(function TabGrid({
   onMouseUp,       // () => void     — drag-select end
 }, ref) {
   const gridRef = useRef(null)
-  const { columns, tuning, bars = [], ghosts = [] } = tab
+  const { columns, tuning, bars = [], ghosts = [], repeats = {} } = tab
   const barsSet = new Set(bars)
   const ghostsSet = new Set(ghosts)
+  const closing = closingBar(tab)
 
   // Auto-scroll cursor into view
   useEffect(() => {
@@ -44,14 +50,14 @@ const TabGrid = forwardRef(function TabGrid({
       onMouseLeave={onMouseUp}
       onMouseUp={onMouseUp}
     >
-      <div className="tab-grid">
+      <div className="tab-grid" style={{ '--strings': tuning.length }}>
         <div className="tab-labels">
           {tuning.map((note, si) => (
             <div key={si} className="tab-label">{note}</div>
           ))}
         </div>
 
-        <div className="tab-bar tab-bar--open" />
+        <div className={barClass('tab-bar tab-bar--open', repeats.open)} />
 
         <div className="tab-columns">
           {columns.map((col, ci) => {
@@ -93,13 +99,13 @@ const TabGrid = forwardRef(function TabGrid({
                     )
                   })}
                 </div>
-                {barsSet.has(ci) && <div className="tab-bar tab-bar--measure" />}
+                {barsSet.has(ci) && ci !== closing.last && <div className={barClass('tab-bar tab-bar--measure', repeats[ci])} />}
               </div>
             )
           })}
         </div>
 
-        <div className="tab-bar tab-bar--close" />
+        <div className={barClass(`tab-bar tab-bar--close${closing.thick ? ' tab-bar--merged' : ''}`, closing.type)} />
       </div>
     </div>
   )

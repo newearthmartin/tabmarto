@@ -48,6 +48,7 @@ src/
     player.js               # Karplus-Strong synth, playNote(), playTab(), cancel()
 
   utils/
+    repeats.js              # Repeat-sign helpers (cycle order, ASCII glyphs, key remapping)
     transpose.js            # transposeSection(): shift by semitones, re-fingering across strings
     fret.js                 # fretToChar() / charToFret()  (0-9, a-o for frets 10-24)
     ascii.js                # toAscii(tab) — multi-section ASCII tab export
@@ -82,7 +83,8 @@ src/
   title: string,
   columns: Array<Array<number|null>>,  // columns[colIndex][stringIndex], null = empty
   bars: number[],                      // sorted column indices that have a bar line after them
-  ghosts: number[],                    // column indices rendered as ghost notes
+  repeats: { [key]: 'start'|'end'|'both' }, // repeat signs: key = column (bar after it), 'open' or 'close' (section edges); start=|: end=:| both=:|:
+  ghosts: string[],                    // "col,string" keys rendered as ghost notes
   pageBreak: boolean,                  // insert PDF page break after this section
 }
 ```
@@ -117,6 +119,8 @@ Functions: `fretToChar(fret)` and `charToFret(char)` in `utils/fret.js`.
 | `Delete` | Clear note or clear selected range |
 | `Backspace` | Clear note + move left |
 | `\|` | Toggle bar line at cursor column |
+| `:` | Cycle repeat sign on the bar after the cursor column: `:\|` → `\|:` → `:\|:` → plain bar (`\|` removes the bar and its repeat) |
+| `{` / `}` | Toggle `\|:` on the section's opening bar / `:\|` on its closing bar |
 | `T` | Transpose current section (dialog: ↑/↓ semitones ±1, Shift ±12, ←/→ slide fret position keeping the same notes, Enter accept, Esc cancel) |
 | `Space` | Play / Stop current section |
 | `Ctrl+A` | Select all columns in current section |
@@ -189,7 +193,9 @@ Functions: `fretToChar(fret)` and `charToFret(char)` in `utils/fret.js`.
 
 ### ASCII
 - `toAscii(tab)` in `utils/ascii.js` renders all sections separated by their titles.
-- Bar lines from `section.bars` are rendered as `|` inline.
+- Bar lines from `section.bars` are rendered as `|` inline (`|:`, `:|`, `:|:` for repeat signs; import parses them back).
+- A bar on a section's last column is drawn as the closing bar (styled exactly like a mid-section bar), with any `:|` dots, instead of an extra line; `+` after it turns it back into a normal mid-section bar (`closingBar()` in `utils/repeats.js`).
+- Repeat signs are display/export only for now — playback does not loop them yet.
 - Output wraps at 80 characters per line.
 - ASCII import (`utils/importAscii.js`) parses ASCII tab text back into sections, detecting tuning labels, bar lines, and page breaks.
 

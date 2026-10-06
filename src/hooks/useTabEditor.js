@@ -9,6 +9,7 @@ import {
   migrateTab,
 } from '../utils/tabModel.js'
 import { charToFret } from '../utils/fret.js'
+import { nextRepeatType, remapRepeats } from '../utils/repeats.js'
 import { transposeSection as transposeSectionData } from '../utils/transpose.js'
 import { importTab as parseTab, exportTab as serializeTab } from '../utils/tabFormat.js'
 
@@ -385,6 +386,7 @@ export function useTabEditor() {
       ...section,
       columns: [...section.columns.slice(0, col + 1), Array(numStrings).fill(null), ...section.columns.slice(col + 1)],
       bars: shiftBarsInsert(section.bars, col),
+      repeats: remapRepeats(section.repeats, c => c > col ? c + 1 : c),
     })))
     setCursor(prev => prev.section === sectionIdx ? { ...prev, col: col + 1 } : prev)
   }, [numStrings, setTab])
@@ -397,6 +399,7 @@ export function useTabEditor() {
         ...section,
         columns: section.columns.filter((_, index) => index !== col),
         bars: shiftBarsDelete(section.bars, col),
+        repeats: remapRepeats(section.repeats, c => c === col ? null : c > col ? c - 1 : c),
       }
     }))
     setCursor(prev => ({
@@ -424,6 +427,7 @@ export function useTabEditor() {
         ),
         cursor.col,
       ),
+      repeats: remapRepeats(section.repeats, c => c > cursor.col ? c + 4 : c),
     })))
     setCursor(prev => ({ ...prev, col: prev.col + 1 }))
   }, [cursor.section, cursor.col, numStrings, setTab])
@@ -435,7 +439,31 @@ export function useTabEditor() {
       bars: section.bars.includes(col)
         ? section.bars.filter(bar => bar !== col)
         : [...section.bars, col].sort((a, b) => a - b),
+      repeats: remapRepeats(section.repeats, c => c === col ? null : c),
     })))
+  }, [setTab])
+
+  // `:` — cycle the bar after `col` through :| → |: → :|: → plain bar
+  const cycleRepeat = useCallback((sectionIdx, col) => {
+    pushHistory()
+    setTab(prev => updateSection(prev, sectionIdx, section => {
+      const repeats = { ...(section.repeats ?? {}) }
+      const next = nextRepeatType(repeats[col])
+      if (next) repeats[col] = next; else delete repeats[col]
+      const bars = section.bars.includes(col) ? section.bars : [...section.bars, col].sort((a, b) => a - b)
+      return { ...section, bars, repeats }
+    }))
+  }, [setTab])
+
+  // `{` / `}` — toggle |: on the section's opening bar, :| on its closing bar.
+  const toggleRepeatEdge = useCallback((sectionIdx, edge) => {
+    pushHistory()
+    setTab(prev => updateSection(prev, sectionIdx, section => {
+      const repeats = { ...(section.repeats ?? {}) }
+      if (repeats[edge]) delete repeats[edge]
+      else repeats[edge] = edge === 'open' ? 'start' : 'end'
+      return { ...section, repeats }
+    }))
   }, [setTab])
 
   const pasteColumns = useCallback((sectionIdx, cols, atCol, bars = []) => {
@@ -682,6 +710,8 @@ export function useTabEditor() {
     deleteColumn,
     insertMeasureBreak,
     toggleBar,
+    cycleRepeat,
+    toggleRepeatEdge,
     pasteColumns,
     addSection,
     deleteSection,

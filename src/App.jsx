@@ -21,7 +21,7 @@ export default function App() {
     moveCursor, undo,
     handleChar, clearNote, setNote, clearRange,
     insertColumnAfter, deleteColumn, insertMeasureBreak,
-    toggleBar, pasteColumns,
+    toggleBar, cycleRepeat, toggleRepeatEdge, pasteColumns,
     addSection, deleteSection, updateSectionTitle, toggleSectionPageBreak, toggleGhost, transposeSection,
     newTab, loadTabById, importTab, deleteTabById, savedTabs,
     updateTitle, updateTuning, updateTempo, appendSections,
@@ -331,6 +331,15 @@ export default function App() {
         toggleBar(cursor.section, cursor.col)
         break
 
+      case ':':
+        e.preventDefault(); cycleRepeat(cursor.section, cursor.col); break
+
+      case '{':
+        e.preventDefault(); toggleRepeatEdge(cursor.section, 'open'); break
+
+      case '}':
+        e.preventDefault(); toggleRepeatEdge(cursor.section, 'close'); break
+
       case 't': case 'T':
         e.preventDefault(); clearSelection(); stopPlayback(); setTranspose({ section: cursor.section, semitones: 0, position: 0 }); break
 
@@ -363,7 +372,7 @@ export default function App() {
     }
   }, [cursor, selection, moveCursor, undo, clearNote, clearRange,
       insertColumnAfter, deleteColumn, insertMeasureBreak,
-      toggleBar, handleChar, togglePlayback,
+      toggleBar, cycleRepeat, toggleRepeatEdge, handleChar, togglePlayback,
       getSelectionRange, clearSelection, cutColumns, pasteColumns, toggleGhost, tab?.sections,
       transpose, acceptTranspose, stopPlayback])
 

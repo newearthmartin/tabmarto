@@ -19,6 +19,7 @@ function compressSection(section) {
   out.len = section.columns.length
   out.notes = notes
   if (bars.length)       out.bars      = bars
+  if (Object.keys(section.repeats ?? {}).length) out.repeats = section.repeats
   if (ghosts.length)     out.ghosts    = ghosts
   if (section.pageBreak) out.pageBreak = true
   return out
@@ -35,6 +36,7 @@ function decompressSection(s, numStrings = 6) {
     title: s.title ?? '',
     columns,
     bars: s.bars ?? [],
+    repeats: s.repeats ?? {},
     ghosts,
     pageBreak: s.pageBreak ?? false,
   }

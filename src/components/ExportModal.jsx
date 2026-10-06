@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { hasRepeatStart, hasRepeatEnd, closingBar } from '../utils/repeats.js'
 import { exportTab } from '../utils/tabFormat.js'
 import './ExportModal.css'
 
@@ -51,6 +52,16 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
 
     let y = my
 
+    // Repeat dots beside a bar line on the two middle strings
+    function drawRepeatDots(type, barXPos, rowTop, si) {
+      const mid = Math.floor(numStrings / 2)
+      if (si !== mid - 1 && si !== mid) return
+      const cy = rowTop + rowH / 2
+      doc.setFillColor(20, 20, 20)
+      if (hasRepeatStart(type)) doc.circle(barXPos + 1.15, cy, 0.48, 'F')
+      if (hasRepeatEnd(type)) doc.circle(barXPos - 1.15, cy, 0.48, 'F')
+    }
+
     function ensureSpace(h) {
       if (y + h > pageH - my) { doc.addPage(); y = my }
     }
@@ -64,6 +75,8 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
 
     for (const section of tab.sections) {
       const barsSet = new Set(section.bars ?? [])
+      const repeats = section.repeats ?? {}
+      const closing = closingBar(section)
       const ghostsSet = new Set(section.ghosts ?? [])
       const columns = section.columns
 
@@ -86,7 +99,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         let usedW = 0
         while (end < columns.length && usedW + cellW <= lineW) {
           usedW += cellW
-          if (barsSet.has(end)) usedW += cellW // bar takes a full cell width
+          if (barsSet.has(end) && end !== closing.last) usedW += cellW // bar takes a full cell width
           end++
         }
         if (end === start) end = start + 1 // always advance at least one column
@@ -99,7 +112,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         for (let i = 0; i < chunk.length; i++) {
           colX[i] = xOff
           xOff += cellW
-          if (barsSet.has(start + i)) xOff += cellW
+          if (barsSet.has(start + i) && start + i !== closing.last) xOff += cellW
         }
         const totalW = xOff
 
@@ -120,6 +133,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
           doc.setDrawColor(140, 140, 140)
           doc.setLineWidth(0.25)
           doc.line(barX, rowTop, barX, rowTop + rowH)
+          if (start === 0) drawRepeatDots(repeats.open === 'start' ? 'start' : undefined, barX, rowTop, si)
 
           // Cells
           chunk.forEach((col, i) => {
@@ -145,11 +159,12 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
             }
 
             // Measure bar after column
-            if (barsSet.has(start + i)) {
+            if (barsSet.has(start + i) && start + i !== closing.last) {
               const bx = barX + 0.5 + colX[i] + cellW + cellW / 2
               doc.setDrawColor(140, 140, 140)
               doc.setLineWidth(0.25)
               doc.line(bx, rowTop, bx, rowTop + rowH)
+              drawRepeatDots(repeats[start + i], bx, rowTop, si)
             }
           })
 
@@ -157,7 +172,9 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
           const closeX = barX + 0.5 + totalW
           doc.setDrawColor(140, 140, 140)
           doc.setLineWidth(0.25)
+          const isFinal = end === columns.length
           doc.line(closeX, rowTop, closeX, rowTop + rowH)
+          if (isFinal) drawRepeatDots(closing.type, closeX, rowTop, si)
         })
 
         y += blockH + 4

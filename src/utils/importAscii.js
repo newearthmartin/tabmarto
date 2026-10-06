@@ -9,25 +9,51 @@ function parseBlock(stringLines) {
   if (parsedLines.some(l => !l)) return null
 
   const tuning = parsedLines.map(l => l.note)
-  const contents = parsedLines.map(l => {
+  const repeats = {}
+  let contents = parsedLines.map(l => {
     let c = l.content
     if (c.endsWith('|')) c = c.slice(0, -1)
     return c
   })
+  // |: at the start of the line, :| at the end
+  if (contents.some(c => c.startsWith(':'))) {
+    repeats.open = 'start'
+    contents = contents.map(c => c.startsWith(':') ? c.slice(1) : c)
+  }
+  if (contents.some(c => c.endsWith(':'))) {
+    repeats.close = 'end'
+    contents = contents.map(c => c.endsWith(':') ? c.slice(0, -1) : c)
+  }
 
   const maxLen = Math.max(...contents.map(c => c.length))
   const columns = []
   const bars = []
   const ghosts = []
   let i = 0
+  let pendingEnd = false
 
   while (i < maxLen) {
     const chars = contents.map(c => (i < c.length ? c[i] : '-'))
 
-    // Bar line: 1 char
-    if (chars.some(ch => ch === '|')) {
-      if (columns.length > 0) bars.push(columns.length - 1)
+    // Repeat end dots (:|) — the bar itself follows on the next char
+    if (contents.some(c => c[i] === ':' && c[i + 1] === '|')) {
+      pendingEnd = true
       i++
+      continue
+    }
+
+    // Bar line: 1 char, optionally followed by repeat start dots (|:)
+    if (chars.some(ch => ch === '|')) {
+      const isStart = contents.some(c => c[i] === '|' && c[i + 1] === ':')
+      if (columns.length > 0) {
+        const ci = columns.length - 1
+        bars.push(ci)
+        if (pendingEnd && isStart) repeats[ci] = 'both'
+        else if (pendingEnd) repeats[ci] = 'end'
+        else if (isStart) repeats[ci] = 'start'
+      }
+      pendingEnd = false
+      i += isStart ? 2 : 1
       continue
     }
 
@@ -81,7 +107,7 @@ function parseBlock(stringLines) {
     i += 2
   }
 
-  return { tuning, columns, bars: bars.sort((a, b) => a - b), ghosts }
+  return { tuning, columns, bars: bars.sort((a, b) => a - b), repeats, ghosts }
 }
 
 export function parseAsciiTab(text) {
@@ -136,6 +162,7 @@ export function parseAsciiTab(text) {
       title: block.title || '',
       columns: parsed.columns,
       bars: parsed.bars,
+      repeats: parsed.repeats || {},
       ghosts: parsed.ghosts || [],
       pageBreak: block.pageBreak || false,
     }

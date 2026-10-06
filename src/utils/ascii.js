@@ -1,3 +1,5 @@
+import { barGlyph, closingBar } from './repeats.js'
+
 function fretToChars(fret, isGhost) {
   if (isGhost && fret !== null) return `(${fret})` // 3 or 4 chars
   if (fret === null) return '--'
@@ -6,7 +8,9 @@ function fretToChars(fret, isGhost) {
 }
 
 function sectionToAscii(section, tuning, charsPerLine = 80) {
-  const { columns, bars = [], ghosts = [] } = section
+  const { columns, bars = [], ghosts = [], repeats = {} } = section
+  const closing = closingBar(section)
+  const openGlyph = barGlyph(repeats.open === 'start' ? 'start' : undefined)
   const ghostsSet = new Set(ghosts)
   const barsSet = new Set(bars)
   const labelWidth = 2 // "E|"
@@ -26,17 +30,17 @@ function sectionToAscii(section, tuning, charsPerLine = 80) {
 
   while (start < columns.length) {
     let end = start
-    let width = labelWidth + 1 // label + opening bar
+    let width = labelWidth - 1 + openGlyph.length // label + opening bar
     while (end < columns.length) {
       width += colWidths[end]
-      if (barsSet.has(end)) width += 1
+      if (barsSet.has(end) && end !== closing.last) width += barGlyph(repeats[end]).length
       if (width > charsPerLine && end > start) break
       end++
     }
 
     const chunk = columns.slice(start, end)
     const stringLines = tuning.map((note, si) => {
-      let line = note.padStart(1) + '|'
+      let line = note.padStart(1) + openGlyph
       chunk.forEach((col, i) => {
         const ci = start + i
         const fret = col[si]
@@ -44,9 +48,9 @@ function sectionToAscii(section, tuning, charsPerLine = 80) {
         const chars = fretToChars(fret, isGhost)
         // Pad to column width so all strings align
         line += chars.padEnd(colWidths[ci], '-')
-        if (barsSet.has(ci)) line += '|'
+        if (barsSet.has(ci) && ci !== closing.last) line += barGlyph(repeats[ci])
       })
-      line += '|'
+      line += closing.type === 'end' && start + chunk.length === columns.length ? ':|' : '|'
       return line
     })
     lines.push(...stringLines, '')

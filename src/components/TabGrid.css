@@ -36,7 +36,25 @@
 .tab-bar {
   align-self: stretch;
   flex-shrink: 0;
+  position: relative;
 }
+
+/* Repeat dots: two dots centred on the middle of the staff, drawn beside the bar */
+.tab-bar--rep-start::after,
+.tab-bar--rep-end::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--strings, 6) * 0.6em - 1.2em);
+  height: 2.4em;
+  width: 6px;
+  background:
+    radial-gradient(circle at 50% 25%, var(--text) 2.1px, transparent 2.7px),
+    radial-gradient(circle at 50% 75%, var(--text) 2.1px, transparent 2.7px);
+}
+.tab-bar--rep-start::after { left: calc(100% + 0.2ch); }
+.tab-bar--rep-end::before { right: calc(100% + 0.2ch); }
+.tab-bar--rep-start,
+.tab-bar--rep-end { width: 2px; }
 
 .tab-bar--open {
   width: 1px;
@@ -49,6 +67,8 @@
   background: var(--text-muted);
   margin: 0 0.8ch;
 }
+
+.tab-bar--merged { width: 2px; margin: 0 0.7ch; } /* last-column bar: same as a mid-section bar */
 
 .tab-bar--measure {
   width: 2px;

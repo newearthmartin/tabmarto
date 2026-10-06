@@ -16,6 +16,7 @@ export function createSection(title = '', numStrings = 6) {
     title,
     columns: createEmptyColumns(16, numStrings),
     bars: [],
+    repeats: {},
     ghosts: [],
     pageBreak: false,
   }
@@ -40,6 +41,7 @@ export function migrateTab(tab) {
       title: '',
       columns: tab.columns ?? createEmptyColumns(),
       bars: tab.bars ?? [],
+      repeats: {},
       ghosts: tab.ghosts ?? [],
       pageBreak: false,
     }],
@@ -54,6 +56,7 @@ export function migrateTab(tab) {
       title: section.title ?? '',
       columns: section.columns ?? createEmptyColumns(16, (base.tuning ?? STANDARD_TUNING).length),
       bars: section.bars ?? [],
+      repeats: section.repeats ?? {},
       ghosts: section.ghosts ?? [],
       pageBreak: section.pageBreak ?? false,
     })),
