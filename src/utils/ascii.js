@@ -64,6 +64,7 @@ export function toAscii(tab, charsPerLine = 80) {
   const parts = [tab.title, '']
   tab.sections.forEach((section) => {
     if (section.title) parts.push(section.title)
+    if (section.note) parts.push(...section.note.split('\n').map(line => `# ${line}`))
     parts.push(sectionToAscii(section, tab.tuning, charsPerLine))
   })
   return parts.join('\n')

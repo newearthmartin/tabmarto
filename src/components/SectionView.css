@@ -89,3 +89,23 @@
   color: var(--text-muted);
   border-color: var(--border);
 }
+
+.section-note-input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  padding: 1px 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.section-note-input::placeholder {
+  color: var(--border);
+}

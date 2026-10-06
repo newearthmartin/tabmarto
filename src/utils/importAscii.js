@@ -119,6 +119,7 @@ export function parseAsciiTab(text) {
   const blocks = []
   let currentBlock = []
   let pendingTitle = ''
+  let pendingNote = []
   let tabTitle = ''
   let seenBlankAfterPending = false
 
@@ -126,9 +127,10 @@ export function parseAsciiTab(text) {
     if (isStringLine(line)) {
       currentBlock.push(line)
       if (currentBlock.length === 6) {
-        blocks.push({ title: pendingTitle.trim(), lines: [...currentBlock], pageBreak: false })
+        blocks.push({ title: pendingTitle.trim(), note: pendingNote.join('\n'), lines: [...currentBlock], pageBreak: false })
         currentBlock = []
         pendingTitle = ''
+        pendingNote = []
         seenBlankAfterPending = false
       }
     } else {
@@ -136,6 +138,9 @@ export function parseAsciiTab(text) {
       const trimmed = line.trim()
       if (PAGE_BREAK_RE.test(trimmed)) {
         if (blocks.length > 0) blocks[blocks.length - 1].pageBreak = true
+      } else if (trimmed.startsWith('#')) {
+        // `# text` lines are section notes, not titles
+        pendingNote.push(trimmed.replace(/^#\s?/, ''))
       } else if (trimmed) {
         // A text line preceded by a blank is the tab title
         if (seenBlankAfterPending && pendingTitle && !tabTitle) {
@@ -160,6 +165,7 @@ export function parseAsciiTab(text) {
     return {
       id: generateId(),
       title: block.title || '',
+      note: block.note || '',
       columns: parsed.columns,
       bars: parsed.bars,
       repeats: parsed.repeats || {},

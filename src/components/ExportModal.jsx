@@ -63,8 +63,62 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
       if (hasRepeatEnd(type)) doc.circle(barXPos - 1.15, cy, 0.48, 'F')
     }
 
+    const lineW = pageW - 2 * mx - labelW - 1 - 2 * gutter
+
+    // End column (exclusive) of the row starting at `start`: as many columns as
+    // fit, breaking at the last bar line when the section continues.
+    function rowEnd(section, start) {
+      const barsSet = new Set(section.bars ?? [])
+      const closingLast = closingBar(section).last
+      const columns = section.columns
+      let end = start
+      let usedW = 0
+      while (end < columns.length && usedW + cellW <= lineW) {
+        usedW += cellW
+        if (barsSet.has(end) && end !== closingLast) usedW += cellW // bar takes a full cell width
+        end++
+      }
+      if (end === start) end = start + 1 // always advance at least one column
+      if (end < columns.length) {
+        for (let c = end - 1; c >= start; c--) {
+          if (barsSet.has(c)) { end = c + 1; break }
+        }
+      }
+      return end
+    }
+
+    function noteLinesFor(section) {
+      doc.setFont('Helvetica', 'italic')
+      doc.setFontSize(11)
+      return doc.splitTextToSize(section.note, pageW - 2 * mx)
+    }
+
+    // Vertical space a section takes (mirrors the drawing code below)
+    function sectionHeight(section) {
+      let h = 0
+      if (section.title) h += 4 + 8
+      if (section.note) h += noteLinesFor(section).length * 5 + 2
+      for (let start = 0; start < section.columns.length; start = rowEnd(section, start)) h += blockH + 4
+      return h + (section.pageBreak ? 0 : 3)
+    }
+
+    // Sections are grouped under the last titled section: a titled section plus
+    // the untitled ones after it. Keep a group on one page when it fits on one.
+    function groupHeight(startIndex) {
+      let h = 0
+      for (let i = startIndex; i < tab.sections.length; i++) {
+        if (i > startIndex && tab.sections[i].title) break
+        h += sectionHeight(tab.sections[i])
+        if (tab.sections[i].pageBreak) break
+      }
+      return h
+    }
+
+    let pageHasContent = false
+    function newPage() { doc.addPage(); y = my; pageHasContent = false }
+
     function ensureSpace(h) {
-      if (y + h > pageH - my) { doc.addPage(); y = my }
+      if (y + h > pageH - my) newPage()
     }
 
     // Title
@@ -74,7 +128,12 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     doc.text(tab.title || 'Untitled Tab', mx, y)
     y += 9
 
-    for (const section of tab.sections) {
+    for (const [sectionIndex, section] of tab.sections.entries()) {
+      if (sectionIndex === 0 || section.title) {
+        const h = groupHeight(sectionIndex)
+        if (pageHasContent && h <= pageH - 2 * my && y + h > pageH - my) newPage()
+      }
+
       const barsSet = new Set(section.bars ?? [])
       const repeats = section.repeats ?? {}
       const closing = closingBar(section)
@@ -91,26 +150,19 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         y += 8
       }
 
-      const lineW = pageW - 2 * mx - labelW - 1 - 2 * gutter
+      if (section.note) {
+        doc.setFont('Helvetica', 'italic')
+        doc.setFontSize(11)
+        doc.setTextColor(110, 110, 110)
+        const noteLines = noteLinesFor(section)
+        ensureSpace(noteLines.length * 5 + blockH)
+        doc.text(noteLines, mx, y, { lineHeightFactor: 1.2 })
+        y += noteLines.length * 5 + 2
+      }
 
       let start = 0
       while (start < columns.length) {
-        // Determine how many columns fit on this line, accounting for bar spacing
-        let end = start
-        let usedW = 0
-        while (end < columns.length && usedW + cellW <= lineW) {
-          usedW += cellW
-          if (barsSet.has(end) && end !== closing.last) usedW += cellW // bar takes a full cell width
-          end++
-        }
-        if (end === start) end = start + 1 // always advance at least one column
-
-        // If the section continues on the next line, break at the last bar that fits
-        if (end < columns.length) {
-          for (let c = end - 1; c >= start; c--) {
-            if (barsSet.has(c)) { end = c + 1; break }
-          }
-        }
+        const end = rowEnd(section, start)
         const lineLast = end - 1 // a bar on this column is drawn as the line's closing bar
 
         const chunk = columns.slice(start, end)
@@ -192,12 +244,12 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         })
 
         y += blockH + 4
+        pageHasContent = true
         start = end
       }
 
       if (section.pageBreak) {
-        doc.addPage()
-        y = my
+        newPage()
       } else {
         y += 3 // gap between sections
       }

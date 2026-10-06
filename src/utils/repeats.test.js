@@ -48,3 +48,13 @@ describe('closing bar', () => {
     expect(line.match(/\|/g).length).toBe(2)
   })
 })
+
+describe('section note', () => {
+  it('ASCII export → import keeps the note and does not use it as the title', () => {
+    const tab = { title: 'T', tuning: ['E', 'B', 'G', 'D', 'A', 'E'],
+      sections: [{ title: 'Verse', note: 'play softly\nrepeat x2', columns: cols(3), bars: [], repeats: {}, ghosts: [] }] }
+    const parsed = parseAsciiTab(toAscii(tab))
+    expect(parsed.sections[0].title).toBe('Verse')
+    expect(parsed.sections[0].note).toBe('play softly\nrepeat x2')
+  })
+})

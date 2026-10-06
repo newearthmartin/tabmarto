@@ -17,6 +17,7 @@ const SectionView = forwardRef(function SectionView({
   onAddSection,
   onDeleteSection,
   onUpdateTitle,
+  onUpdateNote,
   onTogglePageBreak,
 }, ref) {
   const isActiveSec = cursor.section === sectionIndex
@@ -41,6 +42,14 @@ const SectionView = forwardRef(function SectionView({
           placeholder={`Section ${sectionIndex + 1}`}
           onChange={e => onUpdateTitle(e.target.value)}
           spellCheck={false}
+        />
+        <textarea
+          className="section-note-input"
+          value={section.note ?? ''}
+          placeholder="Add a note…"
+          rows={1}
+          onChange={e => onUpdateNote(e.target.value)}
+          ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px` } }}
         />
       </div>
 

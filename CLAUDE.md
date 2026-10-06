@@ -81,6 +81,7 @@ src/
 {
   id: string,
   title: string,
+  note: string,                        // free-text note shown under the title (not a title)
   columns: Array<Array<number|null>>,  // columns[colIndex][stringIndex], null = empty
   bars: number[],                      // sorted column indices that have a bar line after them
   repeats: { [key]: 'start'|'end'|'both' }, // repeat signs: key = column (bar after it), 'open' or 'close' (section edges); start=|: end=:| both=:|:
@@ -195,6 +196,7 @@ Functions: `fretToChar(fret)` and `charToFret(char)` in `utils/fret.js`.
 - `toAscii(tab)` in `utils/ascii.js` renders all sections separated by their titles.
 - Bar lines from `section.bars` are rendered as `|` inline (`|:`, `:|`, `:|:` for repeat signs; import parses them back).
 - A bar on a section's last column is drawn as the closing bar (styled exactly like a mid-section bar), with any `:|` dots, instead of an extra line; `+` after it turns it back into a normal mid-section bar (`closingBar()` in `utils/repeats.js`).
+- Section notes are exported as `# text` lines under the title (import reads `#` lines back as the note) and printed in italics in the PDF.
 - Repeat signs are display/export only for now — playback does not loop them yet.
 - Output wraps at 80 characters per line.
 - ASCII import (`utils/importAscii.js`) parses ASCII tab text back into sections, detecting tuning labels, bar lines, and page breaks.

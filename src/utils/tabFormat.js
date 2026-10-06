@@ -16,6 +16,7 @@ function compressSection(section) {
   const bars = section.bars ?? []
   const out = {}
   if (section.title)     out.title     = section.title
+  if (section.note)      out.note      = section.note
   out.len = section.columns.length
   out.notes = notes
   if (bars.length)       out.bars      = bars
@@ -34,6 +35,7 @@ function decompressSection(s, numStrings = 6) {
   return {
     id: s.id ?? generateId(),
     title: s.title ?? '',
+    note: s.note ?? '',
     columns,
     bars: s.bars ?? [],
     repeats: s.repeats ?? {},

@@ -22,7 +22,7 @@ export default function App() {
     handleChar, clearNote, setNote, clearRange,
     insertColumnAfter, deleteColumn, insertMeasureBreak,
     toggleBar, cycleRepeat, toggleRepeatEdge, pasteColumns,
-    addSection, deleteSection, updateSectionTitle, toggleSectionPageBreak, toggleGhost, transposeSection,
+    addSection, deleteSection, updateSectionTitle, updateSectionNote, toggleSectionPageBreak, toggleGhost, transposeSection,
     newTab, loadTabById, importTab, deleteTabById, savedTabs,
     updateTitle, updateTuning, updateTempo, appendSections,
     switchToDrive, switchToLocal, driveSaving, tabsLoaded, loadingTabId,
@@ -536,6 +536,7 @@ export default function App() {
                       onAddSection={() => addSection(si)}
                       onDeleteSection={() => handleDeleteSection(si)}
                       onUpdateTitle={(title) => updateSectionTitle(si, title)}
+                      onUpdateNote={(note) => updateSectionNote(si, note)}
                       onTogglePageBreak={() => toggleSectionPageBreak(si)}
                     />
                   ))}

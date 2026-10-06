@@ -14,6 +14,7 @@ export function createSection(title = '', numStrings = 6) {
   return {
     id: generateId(),
     title,
+    note: '',
     columns: createEmptyColumns(16, numStrings),
     bars: [],
     repeats: {},
@@ -39,6 +40,7 @@ export function migrateTab(tab) {
     sections: [{
       id: generateId(),
       title: '',
+      note: '',
       columns: tab.columns ?? createEmptyColumns(),
       bars: tab.bars ?? [],
       repeats: {},
@@ -54,6 +56,7 @@ export function migrateTab(tab) {
       ...section,
       id: section.id ?? generateId(),
       title: section.title ?? '',
+      note: section.note ?? '',
       columns: section.columns ?? createEmptyColumns(16, (base.tuning ?? STANDARD_TUNING).length),
       bars: section.bars ?? [],
       repeats: section.repeats ?? {},
