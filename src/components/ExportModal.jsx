@@ -44,6 +44,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     const cellW = 4.0    // mm per column
     const rowH = 4.0     // mm per string row
     const labelW = 5     // mm for tuning label
+    const gutter = 2     // mm between the first/last bar line and the notes (room for repeat dots)
     const normalSize = 11
     const smallSize = 8
     const numStrings = tab.tuning.length
@@ -90,7 +91,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         y += 8
       }
 
-      const lineW = pageW - 2 * mx - labelW - 1
+      const lineW = pageW - 2 * mx - labelW - 1 - 2 * gutter
 
       let start = 0
       while (start < columns.length) {
@@ -104,6 +105,14 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         }
         if (end === start) end = start + 1 // always advance at least one column
 
+        // If the section continues on the next line, break at the last bar that fits
+        if (end < columns.length) {
+          for (let c = end - 1; c >= start; c--) {
+            if (barsSet.has(c)) { end = c + 1; break }
+          }
+        }
+        const lineLast = end - 1 // a bar on this column is drawn as the line's closing bar
+
         const chunk = columns.slice(start, end)
 
         // Precompute x offset for each column in the chunk (accounting for bars before it)
@@ -112,7 +121,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         for (let i = 0; i < chunk.length; i++) {
           colX[i] = xOff
           xOff += cellW
-          if (barsSet.has(start + i) && start + i !== closing.last) xOff += cellW
+          if (barsSet.has(start + i) && start + i !== lineLast) xOff += cellW
         }
         const totalW = xOff
 
@@ -133,12 +142,16 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
           doc.setDrawColor(140, 140, 140)
           doc.setLineWidth(0.25)
           doc.line(barX, rowTop, barX, rowTop + rowH)
-          if (start === 0) drawRepeatDots(repeats.open === 'start' ? 'start' : undefined, barX, rowTop, si)
+          // Opening dots: section start, or a |: carried over from the bar the previous line broke at
+          const openType = start === 0
+            ? (repeats.open === 'start' ? 'start' : undefined)
+            : (barsSet.has(start - 1) && hasRepeatStart(repeats[start - 1]) ? 'start' : undefined)
+          drawRepeatDots(openType, barX, rowTop, si)
 
           // Cells
           chunk.forEach((col, i) => {
             const fret = col[si]
-            const cx = barX + 0.5 + colX[i]
+            const cx = barX + gutter + colX[i]
             const isGhost = ghostsSet.has(`${start + i},${si}`)
 
             if (fret !== null) {
@@ -159,8 +172,8 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
             }
 
             // Measure bar after column
-            if (barsSet.has(start + i) && start + i !== closing.last) {
-              const bx = barX + 0.5 + colX[i] + cellW + cellW / 2
+            if (barsSet.has(start + i) && start + i !== lineLast) {
+              const bx = barX + gutter + colX[i] + cellW + cellW / 2
               doc.setDrawColor(140, 140, 140)
               doc.setLineWidth(0.25)
               doc.line(bx, rowTop, bx, rowTop + rowH)
@@ -169,12 +182,13 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
           })
 
           // Closing bar
-          const closeX = barX + 0.5 + totalW
+          const closeX = barX + gutter + totalW + gutter
           doc.setDrawColor(140, 140, 140)
           doc.setLineWidth(0.25)
           const isFinal = end === columns.length
           doc.line(closeX, rowTop, closeX, rowTop + rowH)
-          if (isFinal) drawRepeatDots(closing.type, closeX, rowTop, si)
+          const closeType = isFinal ? closing.type : (barsSet.has(lineLast) && hasRepeatEnd(repeats[lineLast]) ? 'end' : undefined)
+          drawRepeatDots(closeType, closeX, rowTop, si)
         })
 
         y += blockH + 4
