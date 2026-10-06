@@ -87,6 +87,19 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
       return end
     }
 
+    // Note block: ~4mm of white above (title/previous rows → note) and the same
+    // below (note → top of the tab rows). Height from first baseline to row top:
+    const noteLineH = 11 * 1.2 * 25.4 / 72 // mm per line at 11pt, line factor 1.2
+    const noteHeight = (n) => (n - 1) * noteLineH + 6
+
+    // Section title spacing: white above it, and below it when no note follows
+    // (with a note, the note's own lead keeps the title→note and note→tab gaps even)
+    const TITLE_BEFORE = 6
+    const titleAfter = (section) => section.note ? 8 : 10
+
+    // Extra white above a note so it matches the space below it (+1mm over the title / previous rows)
+    const NOTE_LEAD = 1
+
     function noteLinesFor(section) {
       doc.setFont('Helvetica', 'italic')
       doc.setFontSize(11)
@@ -96,8 +109,8 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     // Vertical space a section takes (mirrors the drawing code below)
     function sectionHeight(section) {
       let h = 0
-      if (section.title) h += 4 + 8
-      if (section.note) h += noteLinesFor(section).length * 5 + 2
+      if (section.title) h += TITLE_BEFORE + titleAfter(section)
+      if (section.note) h += NOTE_LEAD + noteHeight(noteLinesFor(section).length)
       for (let start = 0; start < section.columns.length; start = rowEnd(section, start)) h += blockH + 4
       return h + (section.pageBreak ? 0 : 3)
     }
@@ -141,23 +154,24 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
       const columns = section.columns
 
       if (section.title) {
-        y += 4
-        ensureSpace(10 + blockH)
+        y += TITLE_BEFORE
+        ensureSpace(titleAfter(section) + 2 + blockH)
         doc.setFont('Helvetica', 'bold')
         doc.setFontSize(12)
         doc.setTextColor(80, 80, 80)
         doc.text(section.title, mx, y)
-        y += 8
+        y += titleAfter(section)
       }
 
       if (section.note) {
+        y += NOTE_LEAD
         doc.setFont('Helvetica', 'italic')
         doc.setFontSize(11)
         doc.setTextColor(110, 110, 110)
         const noteLines = noteLinesFor(section)
-        ensureSpace(noteLines.length * 5 + blockH)
+        ensureSpace(NOTE_LEAD + noteHeight(noteLines.length) + blockH)
         doc.text(noteLines, mx, y, { lineHeightFactor: 1.2 })
-        y += noteLines.length * 5 + 2
+        y += noteHeight(noteLines.length)
       }
 
       let start = 0
