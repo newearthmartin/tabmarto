@@ -19,6 +19,7 @@ const SectionView = forwardRef(function SectionView({
   onUpdateTitle,
   onUpdateNote,
   onUpdateCapo,
+  canSetCapo,      // only titled sections can set a capo; others continue the one above
   onTogglePageBreak,
 }, ref) {
   const isActiveSec = cursor.section === sectionIndex
@@ -42,19 +43,20 @@ const SectionView = forwardRef(function SectionView({
           value={section.title}
           placeholder={`Section ${sectionIndex + 1}`}
           onChange={e => onUpdateTitle(e.target.value)}
+          size={Math.max(10, (section.title || '').length + 1)}
           spellCheck={false}
         />
-      </div>
-      <div className="section-note-row">
-        <label className="section-capo" title="Capo fret for this section (affects playback)">
-          Capo
-          <input
-            type="number" min={0} max={12}
-            value={section.capo || ''}
-            placeholder="–"
-            onChange={e => onUpdateCapo(e.target.value)}
-          />
-        </label>
+        {canSetCapo && (
+          <label className="section-capo" title="Capo fret (affects playback). Set it on a titled section; untitled sections continue the capo above.">
+            Capo
+            <input
+              type="number" min={0} max={12}
+              value={section.capo || ''}
+              placeholder="–"
+              onChange={e => onUpdateCapo(e.target.value)}
+            />
+          </label>
+        )}
         <textarea
           className="section-note-input"
           value={section.note ?? ''}

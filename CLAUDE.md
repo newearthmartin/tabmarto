@@ -82,7 +82,7 @@ src/
   id: string,
   title: string,
   note: string,                        // free-text note shown under the title (not a title)
-  capo: number,                        // 0 = none; frets in the section are relative to the capo (playback adds it)
+  capo: number,                        // 0 = none; only honoured on titled sections (untitled ones continue the capo above); frets are relative to the capo (playback adds it)
   columns: Array<Array<number|null>>,  // columns[colIndex][stringIndex], null = empty
   bars: number[],                      // sorted column indices that have a bar line after them
   repeats: { [key]: 'start'|'end'|'both' }, // repeat signs: key = column (bar after it), 'open' or 'close' (section edges); start=|: end=:| both=:|:
@@ -197,7 +197,7 @@ Functions: `fretToChar(fret)` and `charToFret(char)` in `utils/fret.js`.
 - `toAscii(tab)` in `utils/ascii.js` renders all sections separated by their titles.
 - Bar lines from `section.bars` are rendered as `|` inline (`|:`, `:|`, `:|:` for repeat signs; import parses them back).
 - A bar on a section's last column is drawn as the closing bar (styled exactly like a mid-section bar), with any `:|` dots, instead of an extra line; `+` after it turns it back into a normal mid-section bar (`closingBar()` in `utils/repeats.js`).
-- Section capo (0–12) is edited next to the section title. Playback (and the note preview when entering/clicking frets) adds it to every fret. It is exported as a `Capo en N` line (ASCII; import recognises it) and printed in the PDF in the note style, above the note text. Untitled sections continue the group above, so the line is only printed when the capo changes (`Sin capo` when it drops back to 0); import inherits the capo the same way (`capoLineFor` in `utils/capo.js`).
+- Section capo (0–12) is edited next to the section title and can only be set on a **titled** section; untitled sections continue the capo of the section above (they belong to the group of the last titled one) and don't show the field at all. `effectiveCapos()` in `utils/capo.js` resolves it. Playback (and the note preview when entering/clicking frets) adds it to every fret. It is exported as a `Capo en N` line under the title of titled sections only (ASCII; import recognises it) and printed in the PDF in the note style, above the note text.
 - Section notes are exported as `# text` lines under the title (import reads `#` lines back as the note) and printed in italics in the PDF.
 - Repeat signs are display/export only for now — playback does not loop them yet.
 - Output wraps at 80 characters per line.

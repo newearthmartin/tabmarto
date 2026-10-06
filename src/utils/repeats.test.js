@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { toAscii } from './ascii.js'
 import { parseAsciiTab } from './importAscii.js'
+import { effectiveCapos } from './capo.js'
 import { nextRepeatType, remapRepeats, barGlyph } from './repeats.js'
 
 const cols = (n) => Array.from({ length: n }, (_, i) => ['E', 'B', 'G', 'D', 'A', 'E'].map((_, s) => (s === 0 ? i : null)))
@@ -78,16 +79,19 @@ describe('section capo', () => {
   })
 })
 
-describe('capo continuation', () => {
-  const mk = (title, capo) => ({ title, capo, columns: cols(2), bars: [], repeats: {}, ghosts: [] })
+describe('section capo continuation', () => {
+  const mk = (title, capo = 0) => ({ title, capo, columns: cols(2), bars: [], repeats: {}, ghosts: [] })
   const tab = (sections) => ({ title: 'T', tuning: ['E', 'B', 'G', 'D', 'A', 'E'], sections })
-  it('only prints the capo when it changes within a title group', () => {
-    const text = toAscii(tab([mk('Verse', 2), mk('', 2), mk('', 0), mk('', 0), mk('Chorus', 2)]))
-    expect(text.match(/Capo en 2/g).length).toBe(2) // Verse and Chorus
-    expect(text.match(/Sin capo/g).length).toBe(1)
+  it('a titled section sets the capo, untitled ones continue it (their own value is ignored)', () => {
+    expect(effectiveCapos([mk('A', 3), mk(''), mk('', 7), mk('B'), mk(''), mk('C', 2)])).toEqual([3, 3, 3, 0, 0, 2])
   })
-  it('import restores the inherited capo', () => {
-    const text = toAscii(tab([mk('Verse', 2), mk('', 2), mk('', 0), mk('', 0), mk('Chorus', 2)]))
-    expect(parseAsciiTab(text).sections.map(s => s.capo)).toEqual([2, 2, 0, 0, 2])
+  it('only titled sections print a capo line', () => {
+    const text = toAscii(tab([mk('Verse', 2), mk(''), mk('', 5), mk('Chorus', 2)]))
+    expect(text.match(/Capo en/g).length).toBe(2)
+    expect(text).not.toContain('Sin capo')
+  })
+  it('import round-trips the effective capo', () => {
+    const sections = [mk('Verse', 2), mk(''), mk('Chorus', 0), mk(''), mk('Outro', 4)]
+    expect(effectiveCapos(parseAsciiTab(toAscii(tab(sections))).sections)).toEqual([2, 2, 0, 0, 4])
   })
 })

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTabEditor } from './hooks/useTabEditor.js'
 import { playTab, playNote, resumeAudio } from './audio/player.js'
+import { effectiveCapos } from './utils/capo.js'
 import { copyRepeats } from './utils/repeats.js'
 import { transposeSection as previewTranspose } from './utils/transpose.js'
 import { toAscii } from './utils/ascii.js'
@@ -168,7 +169,7 @@ export default function App() {
 
     // Play only the current section
     const section = t.sections[startSection]
-    const playbackTab = { ...t, columns: section.columns, capo: section.capo ?? 0 }
+    const playbackTab = { ...t, columns: section.columns, capo: effectiveCapos(t.sections)[startSection] }
 
     isPlayingRef.current = true
     playStartRef.current = { section: startSection, col: startCol }
@@ -370,7 +371,7 @@ export default function App() {
           const char = key.toLowerCase()
           handleChar(char)
           const fret = charToFret(char)
-          if (fret !== null) { resumeAudio(); playNote(cursor.string, fret + (tab.sections[cursor.section]?.capo ?? 0)) }
+          if (fret !== null) { resumeAudio(); playNote(cursor.string, fret + (effectiveCapos(tab.sections)[cursor.section] ?? 0)) }
         }
     }
   }, [cursor, selection, moveCursor, undo, clearNote, clearRange,
@@ -397,7 +398,7 @@ export default function App() {
       setCursor({ section: sectionIdx, col, string: str })
       resumeAudio()
       const fret = tab?.sections?.[sectionIdx]?.columns?.[col]?.[str]
-      if (fret != null) playNote(str, fret + (tab?.sections?.[sectionIdx]?.capo ?? 0))
+      if (fret != null) playNote(str, fret + (effectiveCapos(tab?.sections ?? [])[sectionIdx] ?? 0))
     }
     gridRef.current?.focus()
   }, [cursor, selection, tab?.sections, setCursor])
@@ -541,6 +542,7 @@ export default function App() {
                       onUpdateTitle={(title) => updateSectionTitle(si, title)}
                       onUpdateNote={(note) => updateSectionNote(si, note)}
                       onUpdateCapo={(capo) => updateSectionCapo(si, capo)}
+                      canSetCapo={!!section.title}
                       onTogglePageBreak={() => toggleSectionPageBreak(si)}
                     />
                   ))}

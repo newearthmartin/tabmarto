@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { capoLineFor } from '../utils/capo.js'
+import { capoLines } from '../utils/capo.js'
 import { hasRepeatStart, hasRepeatEnd, closingBar } from '../utils/repeats.js'
 import { exportTab } from '../utils/tabFormat.js'
 import './ExportModal.css'
@@ -102,8 +102,9 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     const NOTE_LEAD = 1
 
     // Capo and note are printed together in the note style: "Capo en 2" first
-    const capoLines = new Map(tab.sections.map((s, i) => [s, capoLineFor(s, tab.sections[i - 1])]))
-    const noteText = (section) => [capoLines.get(section) ?? '', section.note].filter(Boolean).join('\n')
+    const capoLineList = capoLines(tab.sections)
+    const capoLineOf = new Map(tab.sections.map((s, i) => [s, capoLineList[i]]))
+    const noteText = (section) => [capoLineOf.get(section) ?? '', section.note].filter(Boolean).join('\n')
 
     function noteLinesFor(section) {
       doc.setFont('Helvetica', 'italic')

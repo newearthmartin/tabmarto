@@ -6,6 +6,10 @@
 
 .section-header {
   padding: 0 2px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 12px;
 }
 
 .section-capo {
@@ -46,7 +50,8 @@
   padding: 2px 0;
   outline: none;
   letter-spacing: 0.3px;
-  width: 100%;
+  flex-shrink: 0;
+  max-width: 60%;
 }
 
 .section-title-input:not(:placeholder-shown) {
@@ -119,17 +124,10 @@
   border-color: var(--border);
 }
 
-.section-note-row {
-  padding: 0 2px;
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-
 .section-note-input {
   display: block;
   flex: 1;
-  min-width: 0;
+  min-width: 12ch;
   background: transparent;
   border: none;
   outline: none;

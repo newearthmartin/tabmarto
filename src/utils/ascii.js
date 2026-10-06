@@ -1,4 +1,4 @@
-import { capoLineFor } from './capo.js'
+import { capoLines } from './capo.js'
 import { barGlyph, closingBar } from './repeats.js'
 
 function fretToChars(fret, isGhost) {
@@ -63,9 +63,10 @@ function sectionToAscii(section, tuning, charsPerLine = 80) {
 
 export function toAscii(tab, charsPerLine = 80) {
   const parts = [tab.title, '']
+  const capoLineBySection = capoLines(tab.sections)
   tab.sections.forEach((section, si) => {
     if (section.title) parts.push(section.title)
-    const capoLine = capoLineFor(section, tab.sections[si - 1])
+    const capoLine = capoLineBySection[si]
     if (capoLine) parts.push(capoLine)
     if (section.note) parts.push(...section.note.split('\n').map(line => `# ${line}`))
     parts.push(sectionToAscii(section, tab.tuning, charsPerLine))
