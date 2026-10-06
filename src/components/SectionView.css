@@ -19,15 +19,17 @@
   flex-shrink: 0;
   font-size: 12px;
   font-style: italic;
-  color: var(--text-muted);
+  color: var(--border);
 }
+
+.section-capo:has(input:not(:placeholder-shown)) { color: var(--text-muted); } /* same gray as a filled-in note */
 
 .section-capo input {
   width: 3.2ch;
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border);
-  color: var(--text);
+  color: var(--text-muted);
   font: inherit;
   font-style: normal;
   text-align: center;
