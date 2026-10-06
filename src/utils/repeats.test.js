@@ -58,3 +58,11 @@ describe('section note', () => {
     expect(parsed.sections[0].note).toBe('play softly\nrepeat x2')
   })
 })
+
+describe('copy/paste repeats', () => {
+  it('copyRepeats re-keys signs inside the range and ignores the rest', async () => {
+    const { copyRepeats } = await import('./repeats.js')
+    expect(copyRepeats({ 1: 'end', 3: 'start', 5: 'both', open: 'start', close: 'end' }, 3, 5))
+      .toEqual({ 0: 'start', 2: 'both' })
+  })
+})

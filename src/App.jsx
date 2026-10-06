@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTabEditor } from './hooks/useTabEditor.js'
 import { playTab, playNote, resumeAudio } from './audio/player.js'
+import { copyRepeats } from './utils/repeats.js'
 import { transposeSection as previewTranspose } from './utils/transpose.js'
 import { toAscii } from './utils/ascii.js'
 import { charToFret } from './utils/fret.js'
@@ -225,6 +226,7 @@ export default function App() {
     clipboardRef.current = {
       columns: section.columns.slice(lo, hi + 1),
       bars: (section.bars || []).filter(b => b >= lo && b <= hi).map(b => b - lo),
+      repeats: copyRepeats(section.repeats, lo, hi),
     }
     for (let ci = hi; ci >= lo; ci--) deleteColumn(si, ci)
     const newLen = Math.max(1, section.columns.length - (hi - lo + 1))
@@ -277,6 +279,7 @@ export default function App() {
           clipboardRef.current = {
             columns: sec?.columns.slice(lo, hi + 1),
             bars: (sec?.bars || []).filter(b => b >= lo && b <= hi).map(b => b - lo),
+            repeats: copyRepeats(sec?.repeats, lo, hi),
           }
           break
         }
@@ -284,7 +287,7 @@ export default function App() {
         case 'v': {
           e.preventDefault()
           if (clipboardRef.current) {
-            pasteColumns(cursor.section, clipboardRef.current.columns, cursor.col, clipboardRef.current.bars)
+            pasteColumns(cursor.section, clipboardRef.current.columns, cursor.col, clipboardRef.current.bars, clipboardRef.current.repeats)
             setSelection({ section: cursor.section, start: cursor.col, end: cursor.col + clipboardRef.current.columns.length - 1 })
           }
           break

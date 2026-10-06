@@ -466,7 +466,7 @@ export function useTabEditor() {
     }))
   }, [setTab])
 
-  const pasteColumns = useCallback((sectionIdx, cols, atCol, bars = []) => {
+  const pasteColumns = useCallback((sectionIdx, cols, atCol, bars = [], pastedRepeats = {}) => {
     if (!cols?.length) return
 
     pushHistory()
@@ -481,7 +481,10 @@ export function useTabEditor() {
       const existingBars = section.bars.filter(b => b < atCol || b >= atCol + cols.length)
       const pastedBars = bars.map(b => b + atCol)
       const mergedBars = [...existingBars, ...pastedBars].sort((a, b) => a - b)
-      return { ...section, columns, bars: mergedBars }
+      // Same for repeat signs: drop those in the paste range, add the pasted ones
+      const repeats = remapRepeats(section.repeats, c => c >= atCol && c < atCol + cols.length ? null : c)
+      for (const [key, type] of Object.entries(pastedRepeats ?? {})) repeats[Number(key) + atCol] = type
+      return { ...section, columns, bars: mergedBars, repeats }
     }))
   }, [numStrings, setTab])
 

@@ -38,3 +38,14 @@ export function closingBar(section) {
   const type = repeats.close ?? (hasBar ? repeats[last] : undefined)
   return { last, thick: hasBar || !!repeats.close, type: hasRepeatEnd(type) ? 'end' : undefined }
 }
+
+// Repeat signs on bars within columns lo..hi, re-keyed relative to lo (for copy/cut).
+export function copyRepeats(repeats = {}, lo, hi) {
+  const out = {}
+  for (const [key, type] of Object.entries(repeats ?? {})) {
+    if (key === 'open' || key === 'close') continue
+    const col = Number(key)
+    if (col >= lo && col <= hi) out[col - lo] = type
+  }
+  return out
+}
