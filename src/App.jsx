@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTabEditor } from './hooks/useTabEditor.js'
 import { playTab, playNote, resumeAudio } from './audio/player.js'
+import { transposeSection as previewTranspose } from './utils/transpose.js'
 import { toAscii } from './utils/ascii.js'
 import { charToFret } from './utils/fret.js'
 import { isConnected, wasConnected, clearConnected, disconnect, listDriveTabs, saveToDrive, loadFromDrive, deleteFromDrive, fetchEmail } from './utils/googleDrive.js'
@@ -10,6 +11,7 @@ import SectionView from './components/SectionView.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ExportModal from './components/ExportModal.jsx'
 import ImportModal from './components/ImportModal.jsx'
+import TransposeDialog from './components/TransposeDialog.jsx'
 import './App.css'
 
 export default function App() {
@@ -20,12 +22,12 @@ export default function App() {
     handleChar, clearNote, setNote, clearRange,
     insertColumnAfter, deleteColumn, insertMeasureBreak,
     toggleBar, pasteColumns,
-    addSection, deleteSection, updateSectionTitle, toggleSectionPageBreak, toggleGhost,
+    addSection, deleteSection, updateSectionTitle, toggleSectionPageBreak, toggleGhost, transposeSection,
     newTab, loadTabById, importTab, deleteTabById, savedTabs,
     updateTitle, updateTuning, updateTempo, appendSections,
     switchToDrive, switchToLocal, driveSaving, tabsLoaded, loadingTabId,
   } = editor
-  const visibleTab = tabsLoaded ? tab : null
+  const baseTab = tabsLoaded ? tab : null
 
   const [isDark, setIsDark] = useState(() => localStorage.getItem('tabmarto_theme') === 'dark')
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('tabmarto_sidebar') !== 'closed')
@@ -112,6 +114,18 @@ export default function App() {
   const [showExport, setShowExport] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [selection, setSelection] = useState(null) // { section, start, end }
+  const [transpose, setTranspose] = useState(null) // { section, semitones, position } while dialog is open
+
+  // While the transpose dialog is open, the grid shows a live (uncommitted) preview.
+  const transposePreview = useMemo(() => {
+    if (!transpose || !baseTab?.sections?.[transpose.section]) return null
+    const { section, dropped } = previewTranspose(baseTab.sections[transpose.section], baseTab.tuning, transpose.semitones, transpose.position)
+    return { section, dropped }
+  }, [transpose, baseTab])
+  const visibleTab = useMemo(() => {
+    if (!baseTab || !transposePreview) return baseTab
+    return { ...baseTab, sections: baseTab.sections.map((s, i) => i === transpose.section ? transposePreview.section : s) }
+  }, [baseTab, transposePreview, transpose])
 
   const isPlayingRef = useRef(false)
   const cancelPlayRef = useRef(null)
@@ -218,11 +232,30 @@ export default function App() {
     setCursor(prev => ({ ...prev, section: si, col: Math.max(0, Math.min(lo, newLen - 1)) }))
   }, [getSelectionRange, cursor, tab?.sections, deleteColumn, setCursor])
 
+  const acceptTranspose = useCallback(() => {
+    if (transpose) transposeSection(transpose.section, transpose.semitones, transpose.position)
+    setTranspose(null)
+  }, [transpose, transposeSection])
+
   // ── Keyboard handler ──────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return
     if (!tab) return
     const { key, ctrlKey, metaKey, shiftKey } = e
+
+    if (transpose) {
+      const step = shiftKey ? 12 : 1
+      const bump = (d) => setTranspose(t => ({ ...t, semitones: Math.max(-24, Math.min(24, t.semitones + d)) }))
+      const slide = (d) => setTranspose(t => ({ ...t, position: Math.max(-12, Math.min(12, t.position + d)) }))
+      if (key === 'ArrowUp' || key === '+' || key === '=') { e.preventDefault(); bump(step) }
+      else if (key === 'ArrowDown' || key === '-' || key === '_') { e.preventDefault(); bump(-step) }
+      else if (key === 'ArrowRight') { e.preventDefault(); slide(1) }
+      else if (key === 'ArrowLeft') { e.preventDefault(); slide(-1) }
+      else if (key === 'Enter') { e.preventDefault(); acceptTranspose() }
+      else if (key === 'Escape') { e.preventDefault(); setTranspose(null) }
+      else if (key === ' ') { e.preventDefault(); togglePlayback() }
+      return
+    }
 
     if (ctrlKey || metaKey) {
       switch (key) {
@@ -298,6 +331,9 @@ export default function App() {
         toggleBar(cursor.section, cursor.col)
         break
 
+      case 't': case 'T':
+        e.preventDefault(); clearSelection(); stopPlayback(); setTranspose({ section: cursor.section, semitones: 0, position: 0 }); break
+
       case 'm': case 'M':
         e.preventDefault(); insertMeasureBreak(); break
 
@@ -328,7 +364,8 @@ export default function App() {
   }, [cursor, selection, moveCursor, undo, clearNote, clearRange,
       insertColumnAfter, deleteColumn, insertMeasureBreak,
       toggleBar, handleChar, togglePlayback,
-      getSelectionRange, clearSelection, cutColumns, pasteColumns, toggleGhost, tab?.sections])
+      getSelectionRange, clearSelection, cutColumns, pasteColumns, toggleGhost, tab?.sections,
+      transpose, acceptTranspose, stopPlayback])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -507,6 +544,18 @@ export default function App() {
       </div>
 
       {visibleTab && showExport && <ExportModal ascii={toAscii(visibleTab)} title={visibleTab.title} tab={visibleTab} onClose={() => setShowExport(false)} />}
+      {transpose && (
+        <TransposeDialog
+          semitones={transpose.semitones}
+          position={transpose.position}
+          dropped={transposePreview?.dropped ?? 0}
+          sectionLabel={baseTab?.sections?.[transpose.section]?.title || `Section ${transpose.section + 1}`}
+          onChange={(semitones) => setTranspose(t => ({ ...t, semitones }))}
+          onPosition={(position) => setTranspose(t => ({ ...t, position }))}
+          onAccept={acceptTranspose}
+          onCancel={() => setTranspose(null)}
+        />
+      )}
       {showImport && (
         <ImportModal
           onImport={handleImport}

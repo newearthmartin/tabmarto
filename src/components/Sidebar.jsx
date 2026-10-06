@@ -326,6 +326,7 @@ export default function Sidebar({
                 ['+  /  -', 'Add / remove col'],
                 ['Del', 'Clear note/selection'],
                 ['|', 'Toggle bar line'],
+                ['T', 'Transpose section'],
                 ['Space', 'Play / Stop'],
                 ['Ctrl+Z', 'Undo'],
                 ['Ctrl+A', 'Select all'],

@@ -42,11 +42,13 @@ src/
     TabGrid.jsx / .css      # The actual grid of cells; pure display + mouse events
     Sidebar.jsx / .css      # Tuning (with presets), saved tabs list, shortcuts cheatsheet
     ExportModal.jsx / .css  # ASCII + PDF export popup
+    TransposeDialog.jsx/.css # Floating ± semitone panel (live preview in grid)
 
   audio/
     player.js               # Karplus-Strong synth, playNote(), playTab(), cancel()
 
   utils/
+    transpose.js            # transposeSection(): shift by semitones, re-fingering across strings
     fret.js                 # fretToChar() / charToFret()  (0-9, a-o for frets 10-24)
     ascii.js                # toAscii(tab) — multi-section ASCII tab export
     importAscii.js          # Parse ASCII tab text back into a tab object
@@ -115,6 +117,7 @@ Functions: `fretToChar(fret)` and `charToFret(char)` in `utils/fret.js`.
 | `Delete` | Clear note or clear selected range |
 | `Backspace` | Clear note + move left |
 | `\|` | Toggle bar line at cursor column |
+| `T` | Transpose current section (dialog: ↑/↓ semitones ±1, Shift ±12, ←/→ slide fret position keeping the same notes, Enter accept, Esc cancel) |
 | `Space` | Play / Stop current section |
 | `Ctrl+A` | Select all columns in current section |
 | `Ctrl+C` | Copy selection (or current column if no selection) |
@@ -164,6 +167,11 @@ Functions: `fretToChar(fret)` and `charToFret(char)` in `utils/fret.js`.
 - `−` button deletes; skips confirmation if the section is empty.
 - Arrow up on string 1 → jumps to last string of previous section.
 - Arrow down on last string → jumps to string 1 of next section.
+
+## Transpose
+
+- `T` opens `TransposeDialog` for the cursor's section; App holds `transpose: { section, semitones }` and renders a live preview (`visibleTab` is the preview while open; nothing is committed or pushed to history until Accept).
+- `utils/transpose.js` computes absolute open-string pitches from the tuning, then per column picks the string/fret assignment (distinct strings, frets 0–24) minimising distance from the section's original fret window (min..max+1) plus a small string-change cost, with a bonus for open strings, so the whole section stays in one hand position (e.g. a 0–4 section +12 lands in 0–5). Notes that don't fit are dropped (dialog shows a warning). Ghost flags follow their notes. `position` slides that fret window (same pitches, different strings/frets); `semitones` may be 0 for a pure re-position.
 
 ## Grid layout (ASCII-style)
 

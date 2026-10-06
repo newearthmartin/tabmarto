@@ -9,6 +9,7 @@ import {
   migrateTab,
 } from '../utils/tabModel.js'
 import { charToFret } from '../utils/fret.js'
+import { transposeSection as transposeSectionData } from '../utils/transpose.js'
 import { importTab as parseTab, exportTab as serializeTab } from '../utils/tabFormat.js'
 
 export { STANDARD_TUNING, generateId }
@@ -501,6 +502,13 @@ export function useTabEditor() {
     }))
   }, [setTab])
 
+  const transposeSection = useCallback((sectionIdx, semitones, position = 0) => {
+    if (!semitones && !position) return
+    pushHistory()
+    setTab(prev => updateSection(prev, sectionIdx, section =>
+      transposeSectionData(section, prev.tuning, semitones, position).section))
+  }, [setTab])
+
   const appendSections = useCallback((sections) => {
     pushHistory()
     setTab(prev => ({ ...prev, sections: [...prev.sections, ...sections], updatedAt: Date.now() }))
@@ -680,6 +688,7 @@ export function useTabEditor() {
     updateSectionTitle,
     toggleSectionPageBreak,
     toggleGhost,
+    transposeSection,
     newTab,
     saveCurrentTab,
     loadTabById,
