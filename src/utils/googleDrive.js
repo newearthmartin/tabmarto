@@ -44,7 +44,7 @@ function requestToken({ prompt, timeoutMs }) {
       client_id: getClientId(),
       scope: SCOPE,
       prompt,
-      ...(userEmail ? { login_hint: userEmail } : {}),
+      ...(userEmail ? { login_hint: userEmail, hint: userEmail } : {}),
       callback: (resp) => {
         if (resp.error) { done(reject, new Error(resp.error)); return }
         accessToken = resp.access_token
@@ -111,9 +111,10 @@ export function getEmail() { return userEmail }
 
 export async function fetchEmail() {
   try {
-    const res = await api('https://www.googleapis.com/oauth2/v3/userinfo')
+    // The userinfo endpoint needs the email scope; Drive's about.get works with drive.appdata.
+    const res = await api(`${DRIVE_API}/about?fields=user(emailAddress)`)
     const info = await res.json()
-    userEmail = info.email || null
+    userEmail = info.user?.emailAddress || null
     if (userEmail) localStorage.setItem(EMAIL_KEY, userEmail)
     return userEmail
   } catch {
