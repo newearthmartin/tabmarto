@@ -522,6 +522,12 @@ export function useTabEditor() {
     setTab(prev => updateSection(prev, index, section => ({ ...section, note })))
   }, [setTab])
 
+  const updateSectionCapo = useCallback((index, capo) => {
+    const value = Math.max(0, Math.min(12, Math.round(Number(capo)) || 0))
+    pushHistory()
+    setTab(prev => updateSection(prev, index, section => section.capo === value ? section : { ...section, capo: value }))
+  }, [setTab])
+
   const toggleSectionPageBreak = useCallback((index) => {
     setTab(prev => updateSection(prev, index, section => ({ ...section, pageBreak: !section.pageBreak })))
   }, [setTab])
@@ -724,6 +730,7 @@ export function useTabEditor() {
     deleteSection,
     updateSectionTitle,
     updateSectionNote,
+    updateSectionCapo,
     toggleSectionPageBreak,
     toggleGhost,
     transposeSection,

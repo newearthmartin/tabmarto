@@ -66,3 +66,28 @@ describe('copy/paste repeats', () => {
       .toEqual({ 0: 'start', 2: 'both' })
   })
 })
+
+describe('section capo', () => {
+  it('ASCII export → import keeps the capo, separate from title and note', () => {
+    const tab = { title: 'T', tuning: ['E', 'B', 'G', 'D', 'A', 'E'],
+      sections: [{ title: 'Verse', capo: 2, note: 'softly', columns: cols(3), bars: [], repeats: {}, ghosts: [] }] }
+    const text = toAscii(tab)
+    expect(text).toContain('Capo en 2')
+    const s = parseAsciiTab(text).sections[0]
+    expect([s.title, s.capo, s.note]).toEqual(['Verse', 2, 'softly'])
+  })
+})
+
+describe('capo continuation', () => {
+  const mk = (title, capo) => ({ title, capo, columns: cols(2), bars: [], repeats: {}, ghosts: [] })
+  const tab = (sections) => ({ title: 'T', tuning: ['E', 'B', 'G', 'D', 'A', 'E'], sections })
+  it('only prints the capo when it changes within a title group', () => {
+    const text = toAscii(tab([mk('Verse', 2), mk('', 2), mk('', 0), mk('', 0), mk('Chorus', 2)]))
+    expect(text.match(/Capo en 2/g).length).toBe(2) // Verse and Chorus
+    expect(text.match(/Sin capo/g).length).toBe(1)
+  })
+  it('import restores the inherited capo', () => {
+    const text = toAscii(tab([mk('Verse', 2), mk('', 2), mk('', 0), mk('', 0), mk('Chorus', 2)]))
+    expect(parseAsciiTab(text).sections.map(s => s.capo)).toEqual([2, 2, 0, 0, 2])
+  })
+})

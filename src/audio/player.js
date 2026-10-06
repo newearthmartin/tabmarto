@@ -70,12 +70,12 @@ function karplusStrong(ctx, frequency, when) {
 /**
  * Play a column, collecting source nodes into the provided set.
  */
-function playColumnCollecting(col, when, openFreqs, nodes) {
+function playColumnCollecting(col, when, openFreqs, nodes, capo = 0) {
   const ctx = getCtx()
   const t = when || ctx.currentTime
   col.forEach((fret, si) => {
     if (fret !== null) {
-      const node = playNote(si, fret, t + si * 0.003, openFreqs)
+      const node = playNote(si, fret + capo, t + si * 0.003, openFreqs)
       nodes.add(node)
       // Remove from set once it finishes naturally
       node.onended = () => nodes.delete(node)
@@ -88,7 +88,7 @@ function playColumnCollecting(col, when, openFreqs, nodes) {
  */
 export function playTab(tab, startCol = 0, endCol = null, onColumnChange) {
   const ctx = getCtx()
-  const { columns, tempo, tuning } = tab
+  const { columns, tempo, tuning, capo = 0 } = tab
   const openFreqs = tuningToFreqs(tuning)
   const end = endCol ?? columns.length - 1
   const secondsPerCol = (60 / tempo) / 2 // each col = 8th note
@@ -101,7 +101,7 @@ export function playTab(tab, startCol = 0, endCol = null, onColumnChange) {
 
   for (let ci = startCol; ci <= end; ci++) {
     const t = start + (ci - startCol) * secondsPerCol
-    playColumnCollecting(columns[ci], t, openFreqs, activeNodes)
+    playColumnCollecting(columns[ci], t, openFreqs, activeNodes, capo)
 
     const delay = (t - ctx.currentTime) * 1000
     const id = setTimeout(() => {

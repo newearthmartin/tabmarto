@@ -1,3 +1,4 @@
+import { CAPO_LINE_RE, NO_CAPO_LINE_RE } from './capo.js'
 import { generateId } from './tabModel.js'
 
 function parseBlock(stringLines) {
@@ -120,6 +121,7 @@ export function parseAsciiTab(text) {
   let currentBlock = []
   let pendingTitle = ''
   let pendingNote = []
+  let pendingCapo = null // null = no capo line seen
   let tabTitle = ''
   let seenBlankAfterPending = false
 
@@ -127,10 +129,11 @@ export function parseAsciiTab(text) {
     if (isStringLine(line)) {
       currentBlock.push(line)
       if (currentBlock.length === 6) {
-        blocks.push({ title: pendingTitle.trim(), note: pendingNote.join('\n'), lines: [...currentBlock], pageBreak: false })
+        blocks.push({ title: pendingTitle.trim(), note: pendingNote.join('\n'), capo: pendingCapo, lines: [...currentBlock], pageBreak: false })
         currentBlock = []
         pendingTitle = ''
         pendingNote = []
+        pendingCapo = null
         seenBlankAfterPending = false
       }
     } else {
@@ -138,6 +141,10 @@ export function parseAsciiTab(text) {
       const trimmed = line.trim()
       if (PAGE_BREAK_RE.test(trimmed)) {
         if (blocks.length > 0) blocks[blocks.length - 1].pageBreak = true
+      } else if (NO_CAPO_LINE_RE.test(trimmed)) {
+        pendingCapo = 0
+      } else if (CAPO_LINE_RE.test(trimmed)) {
+        pendingCapo = Math.min(12, parseInt(trimmed.match(CAPO_LINE_RE)[1], 10))
       } else if (trimmed.startsWith('#')) {
         // `# text` lines are section notes, not titles
         pendingNote.push(trimmed.replace(/^#\s?/, ''))
@@ -159,13 +166,18 @@ export function parseAsciiTab(text) {
   const firstParsed = parseBlock(blocks[0].lines)
   if (!firstParsed) return null
 
+  let lastCapo = 0
   const sections = blocks.map(block => {
     const parsed = parseBlock(block.lines)
     if (!parsed || !parsed.columns.length) return null
+    // Untitled blocks continue the capo of the section above unless they state a new one
+    const capo = block.capo ?? (block.title ? 0 : lastCapo)
+    lastCapo = capo
     return {
       id: generateId(),
       title: block.title || '',
       note: block.note || '',
+      capo,
       columns: parsed.columns,
       bars: parsed.bars,
       repeats: parsed.repeats || {},

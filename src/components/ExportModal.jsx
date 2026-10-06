@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { capoLineFor } from '../utils/capo.js'
 import { hasRepeatStart, hasRepeatEnd, closingBar } from '../utils/repeats.js'
 import { exportTab } from '../utils/tabFormat.js'
 import './ExportModal.css'
@@ -95,22 +96,26 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
     // Section title spacing: white above it, and below it when no note follows
     // (with a note, the note's own lead keeps the title→note and note→tab gaps even)
     const TITLE_BEFORE = 6
-    const titleAfter = (section) => section.note ? 8 : 10
+    const titleAfter = (section) => noteText(section) ? 8 : 10
 
     // Extra white above a note so it matches the space below it (+1mm over the title / previous rows)
     const NOTE_LEAD = 1
 
+    // Capo and note are printed together in the note style: "Capo en 2" first
+    const capoLines = new Map(tab.sections.map((s, i) => [s, capoLineFor(s, tab.sections[i - 1])]))
+    const noteText = (section) => [capoLines.get(section) ?? '', section.note].filter(Boolean).join('\n')
+
     function noteLinesFor(section) {
       doc.setFont('Helvetica', 'italic')
       doc.setFontSize(11)
-      return doc.splitTextToSize(section.note, pageW - 2 * mx)
+      return doc.splitTextToSize(noteText(section), pageW - 2 * mx)
     }
 
     // Vertical space a section takes (mirrors the drawing code below)
     function sectionHeight(section) {
       let h = 0
       if (section.title) h += TITLE_BEFORE + titleAfter(section)
-      if (section.note) h += NOTE_LEAD + noteHeight(noteLinesFor(section).length)
+      if (noteText(section)) h += NOTE_LEAD + noteHeight(noteLinesFor(section).length)
       for (let start = 0; start < section.columns.length; start = rowEnd(section, start)) h += blockH + 4
       return h + (section.pageBreak ? 0 : 3)
     }
@@ -163,7 +168,7 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
         y += titleAfter(section)
       }
 
-      if (section.note) {
+      if (noteText(section)) {
         y += NOTE_LEAD
         doc.setFont('Helvetica', 'italic')
         doc.setFontSize(11)

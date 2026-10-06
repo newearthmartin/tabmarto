@@ -23,7 +23,7 @@ export default function App() {
     handleChar, clearNote, setNote, clearRange,
     insertColumnAfter, deleteColumn, insertMeasureBreak,
     toggleBar, cycleRepeat, toggleRepeatEdge, pasteColumns,
-    addSection, deleteSection, updateSectionTitle, updateSectionNote, toggleSectionPageBreak, toggleGhost, transposeSection,
+    addSection, deleteSection, updateSectionTitle, updateSectionNote, updateSectionCapo, toggleSectionPageBreak, toggleGhost, transposeSection,
     newTab, loadTabById, importTab, deleteTabById, savedTabs,
     updateTitle, updateTuning, updateTempo, appendSections,
     switchToDrive, switchToLocal, driveSaving, tabsLoaded, loadingTabId,
@@ -168,7 +168,7 @@ export default function App() {
 
     // Play only the current section
     const section = t.sections[startSection]
-    const playbackTab = { ...t, columns: section.columns }
+    const playbackTab = { ...t, columns: section.columns, capo: section.capo ?? 0 }
 
     isPlayingRef.current = true
     playStartRef.current = { section: startSection, col: startCol }
@@ -370,7 +370,7 @@ export default function App() {
           const char = key.toLowerCase()
           handleChar(char)
           const fret = charToFret(char)
-          if (fret !== null) { resumeAudio(); playNote(cursor.string, fret) }
+          if (fret !== null) { resumeAudio(); playNote(cursor.string, fret + (tab.sections[cursor.section]?.capo ?? 0)) }
         }
     }
   }, [cursor, selection, moveCursor, undo, clearNote, clearRange,
@@ -397,7 +397,7 @@ export default function App() {
       setCursor({ section: sectionIdx, col, string: str })
       resumeAudio()
       const fret = tab?.sections?.[sectionIdx]?.columns?.[col]?.[str]
-      if (fret != null) playNote(str, fret)
+      if (fret != null) playNote(str, fret + (tab?.sections?.[sectionIdx]?.capo ?? 0))
     }
     gridRef.current?.focus()
   }, [cursor, selection, tab?.sections, setCursor])
@@ -540,6 +540,7 @@ export default function App() {
                       onDeleteSection={() => handleDeleteSection(si)}
                       onUpdateTitle={(title) => updateSectionTitle(si, title)}
                       onUpdateNote={(note) => updateSectionNote(si, note)}
+                      onUpdateCapo={(capo) => updateSectionCapo(si, capo)}
                       onTogglePageBreak={() => toggleSectionPageBreak(si)}
                     />
                   ))}
