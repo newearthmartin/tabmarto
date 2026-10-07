@@ -204,9 +204,9 @@ export default function ExportModal({ ascii, title, tab, onClose }) {
           const baseline = rowTop + rowH * 0.72
 
           // Label
-          doc.setFont('Courier', 'bold')
+          doc.setFont('Courier', 'normal')
           doc.setFontSize(normalSize)
-          doc.setTextColor(170, 170, 170)
+          doc.setTextColor(205, 205, 205)
           doc.text(note, mx, baseline)
 
           // Opening bar
